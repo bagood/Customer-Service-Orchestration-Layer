@@ -144,3 +144,11 @@ class Store:
             "UPDATE transactions SET status = ? WHERE id = ? AND status = 'PENDING'",
             ("SUCCEEDED" if succeeded else "UNKNOWN", transaction_id),
         )
+
+    def record_feedback(
+        self, connection: sqlite3.Connection, session_id: str, rating: int | None,
+    ) -> None:
+        connection.execute(
+            "INSERT INTO feedback (session_id, rating, skipped) VALUES (?, ?, ?)",
+            (session_id, rating, int(rating is None)),
+        )

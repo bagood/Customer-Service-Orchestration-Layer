@@ -14,7 +14,8 @@ ErrorCode = Literal["INVALID_ARGUMENTS", "SERVER_UNAVAILABLE", "UNKNOWN_TOOL"]
 WorkflowId = Literal["buy_package", "send_credit"]
 SessionState = Literal[
     "IDLE", "SELECT_PACKAGE", "ENTER_BALANCE", "CONFIRM_PURCHASE",
-    "EXECUTE_PURCHASE", "FEEDBACK", "ENTER_MSISDN",
+    "EXECUTE_PURCHASE", "FEEDBACK", "ENTER_MSISDN", "ENTER_AMOUNT",
+    "CONFIRM_TRANSFER", "EXECUTE_TRANSFER",
 ]
 
 ENTRY_STATES: dict[WorkflowId, SessionState] = {
@@ -25,7 +26,10 @@ WORKFLOW_STATES: dict[WorkflowId, list[SessionState]] = {
     "buy_package": [
         "SELECT_PACKAGE", "ENTER_BALANCE", "CONFIRM_PURCHASE", "EXECUTE_PURCHASE", "FEEDBACK",
     ],
-    "send_credit": ["ENTER_MSISDN"],
+    "send_credit": [
+        "ENTER_MSISDN", "ENTER_AMOUNT", "ENTER_BALANCE", "CONFIRM_TRANSFER",
+        "EXECUTE_TRANSFER", "FEEDBACK",
+    ],
 }
 
 
@@ -48,18 +52,27 @@ class PurchaseData(StrictModel):
 
 
 class PurchaseTransaction(StrictModel):
+    """The existing success-receipt contract, shared by both demo workflows."""
+
     transaction_id: int = Field(gt=0)
     status: Literal["SUCCEEDED"]
+
+
+class TransferData(StrictModel):
+    msisdn: Annotated[str, StringConstraints(pattern=r"^628[0-9]{8,11}$")]
+    amount_idr: int | None = Field(default=None, gt=0)
+    balance_idr: int | None = Field(default=None, ge=0)
+    transaction_id: int | None = Field(default=None, gt=0)
 
 
 class TurnResponse(StrictModel):
     # Invalid arguments cannot always supply a valid session reference.
     session_ref: Identifier | None
     mode: Literal["demo", "buy_package", "send_credit", "error"]
-    # EXECUTE_PURCHASE is an internal transition, never a customer-facing state.
+    # Execution transitions are internal, never customer-facing states.
     state: Literal[
         "IDLE", "SELECT_PACKAGE", "ENTER_BALANCE", "CONFIRM_PURCHASE",
-        "FEEDBACK", "ENTER_MSISDN", "UNAVAILABLE",
+        "FEEDBACK", "ENTER_MSISDN", "ENTER_AMOUNT", "CONFIRM_TRANSFER", "UNAVAILABLE",
     ]
     state_version: int = Field(ge=0)
     customer_reply: Annotated[str, StringConstraints(min_length=1, max_length=1000)]

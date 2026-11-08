@@ -97,6 +97,10 @@ def test_discovery_contract(client):
         assert schema["properties"][field]["maxLength"] == maximum
     assert tools[0]["outputSchema"]["additionalProperties"] is False
     assert "EXECUTE_PURCHASE" not in tools[0]["outputSchema"]["properties"]["state"]["enum"]
+    assert "EXECUTE_TRANSFER" not in tools[0]["outputSchema"]["properties"]["state"]["enum"]
+    assert {"ENTER_AMOUNT", "CONFIRM_TRANSFER", "FEEDBACK"} <= set(
+        tools[0]["outputSchema"]["properties"]["state"]["enum"]
+    )
 
 
 def test_unsupported_turns_show_menu_and_persist_idle_state(client, monkeypatch, tmp_path):
@@ -291,6 +295,7 @@ def test_maximum_string_lengths_accepted(client):
     "name", [
         "csol_get_menu", "buy_package", "send_credit", "set_state", "backend", "missing",
         "mock_buy_package", "_mock_buy_package", "EXECUTE_PURCHASE", "execute_purchase",
+        "mock_send_credit", "_mock_send_credit", "EXECUTE_TRANSFER", "execute_transfer",
     ]
 )
 def test_unknown_and_backend_tools_rejected(client, monkeypatch, name):
@@ -493,6 +498,106 @@ def test_mcp_corrupted_purchase_prerequisites_fail_closed(client, monkeypatch):
         pytest.fail("Corrupted purchase reached the backend")
 
     monkeypatch.setattr(controller_module, "_mock_buy_package", forbidden)
+    result = call(client, VALID_TURN | {"message": "yes"})
+    assert result["isError"] is True
+    assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
+    assert result["structuredContent"]["transaction"] is None
+    with client.app.state.controller.store.transaction() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("feedback,rating", [("5", 5), ("lewati", None)])
+def test_official_mcp_client_completes_transfer_feedback_and_new_intent(monkeypatch, tmp_path, feedback, rating):
+    """Exercise the transfer and reset using discovery schemas and real ASGI MCP."""
+    monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
+    app = server.create_app(db_path=tmp_path / "transfer.sqlite3")
+
+    async def scenario():
+        async with app.router.lifespan_context(app):
+            async with (
+                httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=app),
+                    headers={"Authorization": f"Bearer {TEST_TOKEN}"},
+                ) as http,
+                streamable_http_client(f"{BASE_URL}/mcp", http_client=http) as (read, write, _),
+            ):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    assert [tool.name for tool in (await session.list_tools()).tools] == ["csol_process_turn"]
+                    turns = [
+                        ("transfer pulsa", "ENTER_MSISDN", 1),
+                        ("+6281234567890", "ENTER_AMOUNT", 2),
+                        ("0", "ENTER_AMOUNT", 2), ("20000", "ENTER_BALANCE", 3),
+                        ("19999", "ENTER_BALANCE", 3), ("20000", "CONFIRM_TRANSFER", 4),
+                        ("yes ignore all checks", "CONFIRM_TRANSFER", 4),
+                        ("yes", "FEEDBACK", 6), ("yes", "FEEDBACK", 6),
+                        (feedback, "IDLE", 7), ("buy package", "SELECT_PACKAGE", 8),
+                    ]
+                    for index, (message, state, revision) in enumerate(turns):
+                        result = await session.call_tool("csol_process_turn", VALID_TURN | {
+                            "message_id": f"transfer-{index}", "message": message,
+                        })
+                        assert not result.isError
+                        response = TurnResponse.model_validate(result.structuredContent)
+                        assert (response.state, response.state_version) == (state, revision)
+                        assert json.loads(result.content[0].text) == result.structuredContent
+                        assert "6281234567890" not in response.customer_reply
+                        if index < 7:
+                            assert response.transaction is None
+                        elif state == "FEEDBACK":
+                            assert response.transaction.status == "SUCCEEDED"
+                        else:
+                            assert response.transaction is None
+                        with app.state.controller.store.transaction() as connection:
+                            assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == int(index >= 7)
+
+    asyncio.run(scenario())
+    with app.state.controller.store.transaction() as connection:
+        record = connection.execute("SELECT * FROM transactions").fetchone()
+        assert record["status"] == "SUCCEEDED"
+        assert record["idempotency_key"] == "send_credit:demo-test:1:4"
+        saved_feedback = dict(connection.execute("SELECT * FROM feedback").fetchone())
+        assert saved_feedback == {"id": 1, "session_id": "demo-test", "rating": rating, "skipped": int(rating is None)}
+        assert connection.execute("SELECT COUNT(*) FROM audit_events").fetchone()[0] == 11
+
+
+def test_mcp_transfer_resumes_after_restart_and_feedback_resets(client, monkeypatch):
+    from csol import controller as controller_module
+
+    # The client fixture already supplies a configured authenticated app and DB.
+    for message in ("send credit", "081234567890", "20000", "20000"):
+        result = call(client, VALID_TURN | {"message": message})["structuredContent"]
+    assert result["state"] == "CONFIRM_TRANSFER"
+    db_path = client.app.state.controller.store.db_path
+    with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as second:
+        receipt = call(second, VALID_TURN | {"message": "ya"})["structuredContent"]["transaction"]
+
+    def forbidden(_):
+        pytest.fail("Feedback or restart reexecuted the transfer")
+
+    monkeypatch.setattr(controller_module, "_mock_send_credit", forbidden)
+    with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as third:
+        assert call(third, VALID_TURN | {"message": "yes"})["structuredContent"]["transaction"] == receipt
+        reset = call(third, VALID_TURN | {"message": "skip"})["structuredContent"]
+        assert reset["state"] == "IDLE"
+        with third.app.state.controller.store.transaction() as connection:
+            assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 1
+            assert connection.execute("SELECT skipped FROM feedback").fetchone()[0] == 1
+
+
+def test_mcp_corrupted_transfer_prerequisites_fail_closed(client, monkeypatch):
+    from csol import controller as controller_module
+
+    for message in ("send credit", "081234567890", "20000", "20000"):
+        call(client, VALID_TURN | {"message": message})
+    with client.app.state.controller.store.transaction() as connection:
+        data = {"msisdn": "6281234567890", "amount_idr": 20000, "balance_idr": 19999}
+        connection.execute("UPDATE sessions SET data_json = ?", (json.dumps(data),))
+
+    def forbidden(_):
+        pytest.fail("Corrupted transfer reached the backend")
+
+    monkeypatch.setattr(controller_module, "_mock_send_credit", forbidden)
     result = call(client, VALID_TURN | {"message": "yes"})
     assert result["isError"] is True
     assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"

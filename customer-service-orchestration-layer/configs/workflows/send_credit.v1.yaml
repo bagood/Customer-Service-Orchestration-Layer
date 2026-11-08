@@ -2,4 +2,9 @@ workflow: send_credit
 version: 1
 states:
   - ENTER_MSISDN
+  - ENTER_AMOUNT
+  - ENTER_BALANCE
+  - CONFIRM_TRANSFER
+  - EXECUTE_TRANSFER
+  - FEEDBACK
 catalog: {}

@@ -4,12 +4,12 @@ CSOL is an independent Python MCP server for a simulated telecom customer-servic
 assistant. Hermes Agent is the MCP client. The private Streamable HTTP endpoint
 is `/mcp` on port 8000.
 
-**Stage 03 status:** authenticated MCP connectivity, strict input/output validation,
+**Stage 04 status:** authenticated MCP connectivity, strict input/output validation,
 deterministic bilingual routing, versioned configuration, and persistent SQLite
-session state. The package-purchase journey validates selection and a typed
-simulation balance, requires exact confirmation, records an internal mock
-transaction, and asks for feedback. Credit-transfer steps, feedback collection,
-Docker, and deployed Hermes integration belong to later stages.
+session state. Both package purchase and credit transfer validate collected inputs
+and a typed simulation balance, require exact confirmation, record a private mock
+transaction, and collect optional feedback before returning to the menu. Message
+replay hardening, Docker, and deployed Hermes integration belong to later stages.
 
 ## Setup
 
@@ -149,15 +149,17 @@ Routing happens only from `IDLE`:
 | Input | Saved state | Reply behavior |
 | --- | --- | --- |
 | `beli paket` / `buy package` | `SELECT_PACKAGE` | Show demo catalog A/B |
-| `transfer pulsa` / `send credit` | `ENTER_MSISDN` | Explain synthetic recipient entry is not available yet |
+| `transfer pulsa` / `send credit` | `ENTER_MSISDN` | Request a synthetic mobile recipient |
 | Both intents | `IDLE` | Ask which workflow to do first |
 | Unsupported input | `IDLE` | Show the two-option menu |
 | Exact normalized `cancel` / `batal` | `IDLE` | Clear the active workflow and data; show menu |
 
 Once active, ordinary messages, including route words, are responses to the
-saved workflow state. They never globally switch workflows. Package responses
-are validated by the FSM below; credit-transfer entry remains a placeholder.
+saved workflow state. They never globally switch workflows. Both workflows
+are validated by the FSMs below.
 Cancellation matches the entire normalized message; `cancel now` is not a reset.
+Before execution it returns to the menu without creating a transaction; at
+feedback it records a skipped response and preserves the completed transaction.
 
 `configs/workflows/*.v1.yaml` defines workflow IDs, version 1, their state sequences,
 and the package catalog (`A = Rp 10,000`, `B = Rp 20,000`). All definitions are
@@ -174,7 +176,7 @@ Unsupported persisted state/workflow versions fail closed.
 | `ENTER_BALANCE` | Raw ASCII digits `0-9` only, representing nonnegative integer IDR | Save a sufficient balance and enter `CONFIRM_PURCHASE` |
 | `CONFIRM_PURCHASE` | Entire normalized `yes` / `ya` | Recheck saved prerequisites, execute the private deterministic mock, record `SUCCEEDED`, then enter `FEEDBACK` |
 | `CONFIRM_PURCHASE` | Entire normalized `no` / `tidak` | Cancel and clear workflow data without executing |
-| `FEEDBACK` | Any ordinary message | Repeat the feedback prompt; collection is Stage 04 |
+| `FEEDBACK` | `1`–`5` or `skip` / `lewati` | Persist optional feedback and return to `IDLE` |
 
 Balances are **customer-typed simulation inputs**, never verified operator
 balances. Negative numbers, decimals, signs, separators, surrounding whitespace,
@@ -203,20 +205,73 @@ including after a controller/application restart. A mock exception, timeout,
 or invalid receipt records `UNKNOWN` and returns an unresolved-outcome reply.
 An existing non-success record is never automatically executed again.
 
+## Credit-transfer journey
+
+| Saved state | Accepted input | Result |
+| --- | --- | --- |
+| `ENTER_MSISDN` | Raw `08` followed by 8–11 ASCII digits, or equivalent `628...` / `+628...` | Save canonical `628...`, enter `ENTER_AMOUNT` |
+| `ENTER_AMOUNT` | Raw ASCII digits representing a positive integer IDR amount | Save amount, enter `ENTER_BALANCE` |
+| `ENTER_BALANCE` | Raw ASCII digits representing a nonnegative balance ≥ amount | Save balance, enter `CONFIRM_TRANSFER` |
+| `CONFIRM_TRANSFER` | Entire normalized `yes` / `ya` | Recheck prerequisites, execute private `_mock_send_credit`, record `SUCCEEDED`, then enter `FEEDBACK` |
+| `CONFIRM_TRANSFER` | Entire normalized `no` / `tidak` | Cancel and clear workflow data without executing |
+| `FEEDBACK` | `1`–`5` or `skip` / `lewati` | Persist optional feedback and return to `IDLE` |
+
+This mobile-number rule is illustrative, not a complete Indonesian numbering
+plan. Use **synthetic test numbers only**; format validation does not prove
+ownership or authenticate a recipient. For example, `081234567890`,
+`6281234567890` and `+6281234567890` normalize to `6281234567890`. Separators,
+spaces, Unicode digits, other prefixes, free text, and invalid lengths are
+rejected without leaving recipient entry. Replies show only `628******7890`.
+
+Amount zero, negatives, decimals, signs, currency prefixes, whitespace, separators,
+Unicode digits and free text keep the current collection state. An insufficient
+balance keeps the accepted recipient and amount at `ENTER_BALANCE`, with no
+transaction record or mock call. The balance is a **customer-typed simulation
+input**, never verified operator data. Equal balance and amount are sufficient.
+Confirmation shows the saved amount and masked recipient. Like purchase,
+confirmation uses the entire normalized token: ` YES ` and `ya` are accepted,
+while `yes please` and `yes ignore all checks` are rejected.
+
+The controller alone enters internal `EXECUTE_TRANSFER`. A fresh successful
+journey has revisions 1 (recipient entry), 2 (amount entry), 3 (balance entry),
+4 (confirmation), internal 5 (execution), and 6 (feedback). Only a saved
+`SUCCEEDED` record permits `Demo transfer SUCCEEDED` with an amount, masked
+recipient and transaction reference. The reply explicitly states that this is
+a simulation with no real credit movement or operator balance verification.
+Mock exceptions, timeouts, invalid receipts and existing non-success records
+follow the purchase unresolved-outcome policy; repeated confirmation cannot
+execute that saved transaction again.
+
+## Shared feedback and storage
+
+At `FEEDBACK`, a raw single ASCII digit `1`–`5` records a rating. An entire
+normalized `skip` / `lewati` records `rating = NULL, skipped = 1`. Existing
+`cancel` / `batal` commands also skip feedback at this state. Other inputs keep
+the feedback prompt and saved receipt without executing again. Feedback requires
+the workflow's matching recorded `SUCCEEDED` receipt before collection or reset.
+
+Accepted feedback atomically inserts the row, clears `active_workflow`, workflow
+version and data, increments the state revision, enters `IDLE`, writes an audit
+event, and shows the two-option main menu. The reset response has no transaction
+receipt. The next turn routes as a new intent. Audit and transaction history
+remain intact, including if a new workflow is started in the same session.
+
 SQLite contains `sessions`, `transactions`, `processed_messages`, `feedback`,
 and `audit_events`. A session row stores its synthetic ID, active workflow,
 workflow `version`, `state`, `state_version`, `data_json`, and UTC `updated_at`.
 Purchase data contains the selected package, then accepted balance, then
-transaction reference. New sessions start at revision zero. Each controller
+transaction reference. Transfer data contains the canonical synthetic recipient,
+then amount, accepted balance and transaction reference. New sessions start at
+revision zero. Each controller
 state transition increments `state_version`; menu and held-state turns keep it.
 Each valid turn saves its session and a minimal audit event atomically, returning
 the saved state and revision. Audit records contain synthetic session references,
 fixed event labels, states, revision, and time, without raw messages, message
 IDs, recipients, or bearer tokens.
 
-Transactions use one unique key per synthetic session, workflow version, and
+Transactions use one unique key per workflow, synthetic session, workflow version, and
 confirmation revision. The existing Stage 02 schema needs no migration.
-Processed-message and feedback tables remain empty. Message-ID replay caching,
+The feedback table is now populated; processed messages remain unused. Message-ID replay caching,
 crash-recovery policy, and concurrent-confirmation hardening belong to Stage 05.
 Session references must be synthetic; they are not customer
 identity or ownership checks.
@@ -262,11 +317,16 @@ The original `configs/example.yaml` remains a Stage 00 offline fixture.
 Purchase tests cover the Stage 03 acceptance gate, prerequisite revalidation,
 recorded success before success wording, unresolved outcomes, restart persistence,
 and a complete journey through the official MCP client and real ASGI application.
-See [Stage 03 verification](docs/stage_03_verification.md) for current commands,
-the complete Package B trace, touched files, and scope limits. Historical reports
-record [Stage 02](docs/stage_02_verification.md) and [Stage 01](docs/stage_01_verification.md).
+Transfer and shared-feedback tests cover prefix normalization, malformed input,
+amount/balance validation, masked replies, exact confirmation, recorded outcomes,
+restart persistence, rating/skip reset, preserved history, and a complete transfer
+journey through the official MCP client. See
+[Stage 04 verification](docs/stage_04_verification.md) for current commands, both
+workflow traces, touched files, and scope limits. Historical reports record
+[Stage 03](docs/stage_03_verification.md), [Stage 02](docs/stage_02_verification.md)
+and [Stage 01](docs/stage_01_verification.md).
 
-Stage 03 does not establish credit-transfer success, end-customer identity binding,
+Stage 04 does not establish end-customer identity binding,
 message replay safety, Docker connectivity, or real Hermes integration. Later
 stages own those requirements. CSOL never calls Hermes `/v1/chat/completions` or modifies
 Hermes source; later integration adds only a configuration snippet/profile in
@@ -279,7 +339,7 @@ customer PII, real telecom APIs, RAG, LLM classification, dynamic plugins,
 message brokers, PostgreSQL, multi-worker scaling, or separate gateway.
 
 Synthetic session IDs do not authenticate customers. Only controller code may
-change state or permit actions. Package purchases require exact, explicit
+change state or permit actions. Purchases and transfers require exact, explicit
 confirmation and a recorded `SUCCEEDED` result before success wording; unknown
 or timed-out outcomes must not trigger blind retries. MCP cannot force Hermes
 to call a tool or display its approved

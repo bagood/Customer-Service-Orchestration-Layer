@@ -167,8 +167,8 @@ def test_exact_confirmation_records_one_succeeded_transaction(controller, backen
     assert response.customer_reply == (
         f"Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction {records[0]['id']}. "
         "Simulation only; no real purchase or operator balance verification. "
-        "Please rate this demo from 1 to 5. Feedback collection is not available yet. "
-        "Type cancel or batal to return to the menu."
+        "Please rate this demo from 1 to 5, or type skip/lewati to skip feedback "
+        "and return to the menu. Type cancel or batal to skip and return as well."
     )
     assert response.allowed_actions == ["cancel"]
     backend.assert_called_once_with(records[0]["id"])
@@ -180,7 +180,7 @@ def test_purchase_progress_and_feedback_survive_restart_without_reexecuting(cont
         controller = Controller(Store(controller.store.db_path), load_configuration())
         assert send(controller, message).state == state
     receipt = saved(controller)[1]
-    for message in ("yes", "ya", "B", "buy package", "5", "EXECUTE_PURCHASE"):
+    for message in ("yes", "ya", "B", "buy package", "6", "EXECUTE_PURCHASE"):
         controller = Controller(Store(controller.store.db_path), load_configuration())
         response = send(controller, message)
         assert (response.state, response.state_version) == ("FEEDBACK", 5)

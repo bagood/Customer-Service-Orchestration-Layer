@@ -1,13 +1,14 @@
-"""Controller-owned routing and package-purchase FSM; all balances are simulated."""
+"""Controller-owned telecom FSMs and feedback; all transactions are simulated."""
 
 import json
 import re
 import sqlite3
 
 from csol.config import Configuration, normalize
-from csol.mock_transactions import _mock_buy_package
+from csol.mock_transactions import _mock_buy_package, _mock_send_credit
 from csol.models import (
-    ENTRY_STATES, PurchaseData, PurchaseTransaction, SessionState, TurnInput, TurnResponse,
+    ENTRY_STATES, PurchaseData, PurchaseTransaction, SessionState, TransferData, TurnInput,
+    TurnResponse,
 )
 from csol.router import match_intents
 from csol.store import Session, Store
@@ -22,11 +23,11 @@ AMBIGUOUS_REPLY = (
     "You requested both demo workflows. Which one would you like to do first?\n" + MENU_REPLY
 )
 FEEDBACK_REPLY = (
-    "Please rate this demo from 1 to 5. Feedback collection is not available yet. "
-    "Type cancel or batal to return to the menu."
+    "Please rate this demo from 1 to 5, or type skip/lewati to skip feedback "
+    "and return to the menu. Type cancel or batal to skip and return as well."
 )
 UNRESOLVED_REPLY = (
-    "The demo purchase outcome is unresolved. It will not be retried automatically. "
+    "The demo transaction outcome is unresolved. It will not be retried automatically. "
     "Type cancel or batal to return to the menu."
 )
 
@@ -45,7 +46,11 @@ class Controller:
             reply = MENU_REPLY
             transaction = None
 
-            if normalize(turn.message) in {"cancel", "batal"}:
+            if before.state == "FEEDBACK":
+                session, event, reply, transaction = self._feedback_turn(
+                    connection, before, turn.message,
+                )
+            elif normalize(turn.message) in {"cancel", "batal"}:
                 event = "cancelled"
                 session = self._cancel(before)
                 reply = "Demo workflow cancelled.\n" + MENU_REPLY
@@ -53,10 +58,10 @@ class Controller:
                 session, event, reply, transaction = self._purchase_turn(
                     connection, before, turn.message,
                 )
-            elif before.state != "IDLE":
-                # Credit-transfer steps belong to Stage 04.
-                event = "entry_state_held"
-                reply = self._entry_reply(before)
+            elif before.active_workflow == "send_credit":
+                session, event, reply, transaction = self._transfer_turn(
+                    connection, before, turn.message,
+                )
             else:
                 matches = match_intents(turn.message, self.config.routing)
                 if len(matches) == 1:
@@ -102,21 +107,41 @@ class Controller:
             raise ValueError("Unsupported saved workflow state or version")
         if session.state == ENTRY_STATES[session.active_workflow]:
             if json.loads(session.data_json) != {}:
-                raise ValueError("Entry state must not contain purchase data")
+                raise ValueError("Entry state must not contain workflow data")
             return
-        if session.active_workflow != "buy_package" or session.state not in {
-            "ENTER_BALANCE", "CONFIRM_PURCHASE", "FEEDBACK",
-        }:
-            raise ValueError("Unsupported saved workflow state")
-        data = self._purchase_data(session)
-        if session.state == "ENTER_BALANCE":
-            if data.balance_idr is not None or data.transaction_id is not None:
-                raise ValueError("Balance entry cannot contain confirmation or transaction data")
+
+        if session.active_workflow == "buy_package":
+            if session.state not in {"ENTER_BALANCE", "CONFIRM_PURCHASE", "FEEDBACK"}:
+                raise ValueError("Unsupported saved workflow state")
+            data = self._purchase_data(session)
+            if session.state == "ENTER_BALANCE":
+                if data.balance_idr is not None or data.transaction_id is not None:
+                    raise ValueError("Balance entry cannot contain confirmation or transaction data")
+            else:
+                if data.balance_idr is None or data.balance_idr < self._price(data):
+                    raise ValueError("Purchase requires a sufficient saved simulation balance")
+                if (session.state == "FEEDBACK") != (data.transaction_id is not None):
+                    raise ValueError("Transaction reference does not match purchase state")
         else:
-            if data.balance_idr is None or data.balance_idr < self._price(data):
-                raise ValueError("Purchase requires a sufficient saved simulation balance")
-            if (session.state == "FEEDBACK") != (data.transaction_id is not None):
-                raise ValueError("Transaction reference does not match purchase state")
+            if session.state not in {"ENTER_AMOUNT", "ENTER_BALANCE", "CONFIRM_TRANSFER", "FEEDBACK"}:
+                raise ValueError("Unsupported saved workflow state")
+            transfer = self._transfer_data(session)
+            if session.state == "ENTER_AMOUNT":
+                if any(value is not None for value in (
+                    transfer.amount_idr, transfer.balance_idr, transfer.transaction_id,
+                )):
+                    raise ValueError("Amount entry may only contain the recipient")
+            else:
+                if transfer.amount_idr is None:
+                    raise ValueError("Transfer requires a positive saved amount")
+                if session.state == "ENTER_BALANCE":
+                    if transfer.balance_idr is not None or transfer.transaction_id is not None:
+                        raise ValueError("Balance entry cannot contain confirmation or transaction data")
+                else:
+                    if transfer.balance_idr is None or transfer.balance_idr < transfer.amount_idr:
+                        raise ValueError("Transfer requires a sufficient saved simulation balance")
+                    if (session.state == "FEEDBACK") != (transfer.transaction_id is not None):
+                        raise ValueError("Transaction reference does not match transfer state")
 
     @staticmethod
     def _cancel(session: Session) -> Session:
@@ -131,11 +156,21 @@ class Controller:
     def _purchase_data(session: Session) -> PurchaseData:
         return PurchaseData.model_validate(json.loads(session.data_json))
 
+    @staticmethod
+    def _transfer_data(session: Session) -> TransferData:
+        return TransferData.model_validate(json.loads(session.data_json))
+
+    @staticmethod
+    def _ascii_integer(message: str) -> int | None:
+        # Inspect the raw input; Unicode normalization must not turn other
+        # digit alphabets, whitespace, signs or separators into money.
+        return int(message) if re.fullmatch(r"[0-9]+", message) else None
+
     def _price(self, data: PurchaseData) -> int:
         return self.config.workflows["buy_package"].catalog[data.package].price_idr
 
     @staticmethod
-    def _advance(session: Session, state: SessionState, data: PurchaseData) -> Session:
+    def _advance(session: Session, state: SessionState, data: PurchaseData | TransferData) -> Session:
         return session.model_copy(update={
             "state": state, "state_version": session.state_version + 1,
             "data_json": data.model_dump_json(exclude_none=True),
@@ -143,7 +178,7 @@ class Controller:
 
     @staticmethod
     def _transaction_key(session: Session, confirmation_revision: int) -> str:
-        return f"buy_package:{session.session_id}:{session.version}:{confirmation_revision}"
+        return f"{session.active_workflow}:{session.session_id}:{session.version}:{confirmation_revision}"
 
     def _purchase_turn(
         self, connection: sqlite3.Connection, session: Session, message: str,
@@ -158,11 +193,9 @@ class Controller:
 
         if session.state == "ENTER_BALANCE":
             data = self._purchase_data(session)
-            # Check the original string: Unicode normalization must not turn
-            # non-ASCII digits, separators, whitespace or decimals into money.
-            if not re.fullmatch(r"[0-9]+", message):
+            balance = self._ascii_integer(message)
+            if balance is None:
                 return session, "invalid_balance", self._purchase_prompt(session), None
-            balance = int(message)
             if balance < self._price(data):
                 return session, "insufficient_balance", (
                     "Insufficient typed demo balance. " + self._purchase_prompt(session)
@@ -183,12 +216,108 @@ class Controller:
                 return session, "purchase_unresolved", UNRESOLVED_REPLY, None
             return session, "confirmation_rejected", self._purchase_prompt(session), None
 
-        # Feedback collection/reset is Stage 04. Repeated turns cannot execute.
-        data = self._purchase_data(session)
+        raise ValueError("Unsupported purchase state")
+
+    def _transfer_turn(
+        self, connection: sqlite3.Connection, session: Session, message: str,
+    ) -> tuple[Session, str, str, PurchaseTransaction | None]:
+        if session.state == "ENTER_MSISDN":
+            # Illustrative synthetic format: 08 followed by 8-11 ASCII digits,
+            # with equivalent 628 and +628 forms. No ownership verification.
+            match = re.fullmatch(r"(?:08|628|\+628)([0-9]{8,11})", message)
+            if match is None:
+                return session, "entry_state_held", self._entry_reply(session), None
+            recipient = self._advance(
+                session, "ENTER_AMOUNT", TransferData(msisdn="628" + match[1]),
+            )
+            return recipient, "recipient_accepted", self._transfer_prompt(recipient), None
+
+        data = self._transfer_data(session)
+        if session.state == "ENTER_AMOUNT":
+            amount = self._ascii_integer(message)
+            if amount is None or amount == 0:
+                return session, "invalid_amount", self._transfer_prompt(session), None
+            collected = self._advance(
+                session, "ENTER_BALANCE", data.model_copy(update={"amount_idr": amount}),
+            )
+            return collected, "amount_accepted", self._transfer_prompt(collected), None
+
+        if session.state == "ENTER_BALANCE":
+            balance = self._ascii_integer(message)
+            if balance is None:
+                return session, "invalid_balance", self._transfer_prompt(session), None
+            if balance < data.amount_idr:
+                return session, "insufficient_balance", (
+                    "Insufficient typed demo balance. " + self._transfer_prompt(session)
+                ), None
+            confirmed = self._advance(
+                session, "CONFIRM_TRANSFER", data.model_copy(update={"balance_idr": balance}),
+            )
+            return confirmed, "balance_accepted", self._transfer_prompt(confirmed), None
+
+        if session.state == "CONFIRM_TRANSFER":
+            token = normalize(message)
+            if token in {"no", "tidak"}:
+                return self._cancel(session), "transfer_declined", "Demo transfer cancelled.\n" + MENU_REPLY, None
+            if token in {"yes", "ya"}:
+                return self._execute_transfer(connection, session)
+            if self.store.transaction_by_key(
+                connection, self._transaction_key(session, session.state_version),
+            ) is not None:
+                return session, "transfer_unresolved", UNRESOLVED_REPLY, None
+            return session, "confirmation_rejected", self._transfer_prompt(session), None
+
+        raise ValueError("Unsupported transfer state")
+
+    def _feedback_turn(
+        self, connection: sqlite3.Connection, session: Session, message: str,
+    ) -> tuple[Session, str, str, PurchaseTransaction | None]:
+        data = (self._purchase_data(session) if session.active_workflow == "buy_package"
+                else self._transfer_data(session))
         receipt = self._saved_receipt(connection, session, session.state_version - 2)
         if receipt.transaction_id != data.transaction_id:
             raise ValueError("Feedback transaction does not match the saved receipt")
-        return session, "feedback_pending", FEEDBACK_REPLY, receipt
+        rating = int(message) if re.fullmatch(r"[1-5]", message) else None
+        skipped = normalize(message) in {"skip", "lewati", "cancel", "batal"}
+        if rating is None and not skipped:
+            return session, "feedback_pending", FEEDBACK_REPLY, receipt
+        self.store.record_feedback(connection, session.session_id, rating)
+        reply = "Demo feedback skipped.\n" if skipped else "Thank you for rating this demo.\n"
+        event = "feedback_skipped" if skipped else "feedback_recorded"
+        return self._cancel(session), event, reply + MENU_REPLY, None
+
+    def _execute_transfer(
+        self, connection: sqlite3.Connection, session: Session,
+    ) -> tuple[Session, str, str, PurchaseTransaction | None]:
+        self._validate_session(session)
+        if session.active_workflow != "send_credit" or session.state != "CONFIRM_TRANSFER":
+            raise ValueError("Transfer execution requires the saved confirmation state")
+        data = self._transfer_data(session)
+        key = self._transaction_key(session, session.state_version)
+        record, created = self.store.obtain_transaction(connection, key)
+        executing = self._advance(
+            session, "EXECUTE_TRANSFER", data.model_copy(update={"transaction_id": record["id"]}),
+        )
+        if created:
+            try:
+                result = PurchaseTransaction.model_validate(_mock_send_credit(record["id"]))
+                if result.transaction_id != record["id"]:
+                    raise ValueError("Mock returned a different transaction reference")
+            except Exception:
+                self.store.finish_transaction(connection, record["id"], succeeded=False)
+                return session, "transfer_unresolved", UNRESOLVED_REPLY, None
+            self.store.finish_transaction(connection, record["id"], succeeded=True)
+        elif record["status"] != "SUCCEEDED":
+            return session, "transfer_unresolved", UNRESOLVED_REPLY, None
+
+        receipt = self._saved_receipt(connection, session, session.state_version)
+        completed = self._advance(executing, "FEEDBACK", self._transfer_data(executing))
+        reply = (
+            f"Demo transfer SUCCEEDED: Rp {data.amount_idr:,} to {self._masked_recipient(data)}, "
+            f"transaction {receipt.transaction_id}. Simulation only; no real credit movement "
+            "or operator balance verification. " + FEEDBACK_REPLY
+        )
+        return completed, "transfer_succeeded", reply, receipt
 
     def _execute_purchase(
         self, connection: sqlite3.Connection, session: Session,
@@ -252,6 +381,32 @@ class Controller:
             "This is not a verified operator balance. No transaction has been executed."
         )
 
+    @staticmethod
+    def _masked_recipient(data: TransferData) -> str:
+        return data.msisdn[:3] + "*" * (len(data.msisdn) - 7) + data.msisdn[-4:]
+
+    def _transfer_prompt(self, session: Session) -> str:
+        data = self._transfer_data(session)
+        recipient = self._masked_recipient(data)
+        if session.state == "ENTER_AMOUNT":
+            return (
+                f"Synthetic recipient {recipient} selected. Enter a positive demo transfer "
+                "amount in IDR using ASCII digits 0-9 only. "
+                "Type cancel or batal to return to the menu. No transaction has been executed."
+            )
+        if session.state == "ENTER_BALANCE":
+            return (
+                f"Demo transfer amount Rp {data.amount_idr:,} to {recipient}. Enter your typed "
+                "simulation balance in IDR using ASCII digits 0-9 only. This is not a verified "
+                "operator balance. Type cancel or batal to return to the menu. "
+                "No transaction has been executed."
+            )
+        return (
+            f"Confirm the demo transfer of Rp {data.amount_idr:,} to {recipient} using the saved "
+            "typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. "
+            "This is not a verified operator balance. No transaction has been executed."
+        )
+
     def _entry_reply(self, session: Session) -> str:
         if session.active_workflow == "buy_package":
             catalog = self.config.workflows["buy_package"].catalog
@@ -260,7 +415,11 @@ class Controller:
             )
             prompt = f"Package demo selected. Catalog: {options}. Select A/B or 1/2."
         else:
-            prompt = "Credit-transfer demo selected. Synthetic recipient entry is not available yet."
+            prompt = (
+                "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed "
+                "by 8-11 ASCII digits, or the equivalent 628... / +628... format. "
+                "This is not proof of ownership; use synthetic test numbers only."
+            )
         return (
             prompt + " Type cancel or batal to return to the menu. "
             "No transaction has been executed."

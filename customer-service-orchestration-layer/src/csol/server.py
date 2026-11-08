@@ -1,4 +1,4 @@
-"""Authenticated MCP transport with a SQLite-backed demo purchase controller."""
+"""Authenticated MCP transport with a SQLite-backed telecom demo controller."""
 
 import json
 import logging
@@ -67,7 +67,7 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
         db_path if db_path is not None else Path(os.environ.get("CSOL_DB_PATH", DEFAULT_DB_PATH))
     )
     controller = Controller(store, config)
-    server = Server("csol", version="0.3.0")
+    server = Server("csol", version="0.4.0")
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
@@ -76,8 +76,9 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
                 name="csol_process_turn",
                 description=(
                     "Process a synthetic telecom demo turn with deterministic routing and "
-                    "persistent state. Package purchases use typed simulation balances, "
-                    "exact confirmation and an internal mock transaction. "
+                    "persistent state. Package purchases and credit transfers use typed "
+                    "simulation balances, exact confirmation and private mock transactions, "
+                    "followed by optional feedback and a menu reset. "
                     "Session references do not "
                     "authenticate customers. Returned actions do not grant authorization."
                 ),
