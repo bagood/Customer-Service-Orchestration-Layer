@@ -67,7 +67,7 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
         db_path if db_path is not None else Path(os.environ.get("CSOL_DB_PATH", DEFAULT_DB_PATH))
     )
     controller = Controller(store, config)
-    server = Server("csol", version="0.4.0")
+    server = Server("csol", version="0.5.0")
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
@@ -95,17 +95,19 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
     @server.call_tool(validate_input=False)
     async def call_tool(name: str, arguments: dict) -> CallToolResult:
         if name != "csol_process_turn":
+            LOGGER.warning("MCP request rejected; code=UNKNOWN_TOOL")
             return tool_result(error_response("UNKNOWN_TOOL"))
         try:
             turn = TurnInput.model_validate(arguments)
         except ValidationError:
+            LOGGER.warning("MCP request rejected; code=INVALID_ARGUMENTS")
             return tool_result(error_response("INVALID_ARGUMENTS"))
         try:
             response = TurnResponse.model_validate(controller.process_turn(turn))
             return tool_result(response)
         except Exception:
             # Do not disclose or log model/customer input or internal exception text.
-            LOGGER.error("MCP tool failed; returning SERVER_UNAVAILABLE")
+            LOGGER.error("MCP tool failed; code=SERVER_UNAVAILABLE")
             return tool_result(error_response("SERVER_UNAVAILABLE", turn.session_ref))
 
     manager = StreamableHTTPSessionManager(

@@ -1,4 +1,5 @@
 import json
+from uuid import uuid4
 
 import pytest
 
@@ -8,9 +9,9 @@ from csol.models import TurnInput
 from csol.store import Store
 
 
-def turn(controller, message, message_id="message-1", session_ref="demo-state"):
+def turn(controller, message, message_id=None, session_ref="demo-state"):
     return controller.process_turn(TurnInput(
-        session_ref=session_ref, message_id=message_id, message=message,
+        session_ref=session_ref, message_id=message_id if message_id is not None else uuid4().hex, message=message,
     ))
 
 
@@ -97,9 +98,11 @@ def test_audit_and_saved_data_exclude_raw_messages_recipients_and_tokens(control
     assert [(event["from_state"], event["to_state"], event["state_version"]) for event in events] == [
         ("IDLE", "ENTER_MSISDN", 1), ("ENTER_MSISDN", "ENTER_MSISDN", 1), ("ENTER_MSISDN", "IDLE", 2),
     ]
-    for private in (sensitive, "6281234567890", "private-token-sentinel", "private-message-id-sentinel"):
+    for private in (sensitive, "6281234567890", "private-token-sentinel"):
         assert private not in dump
         assert private not in json.dumps(events)
+    # Message IDs are now deliberately persisted as replay-cache keys, never audit data.
+    assert "private-message-id-sentinel" not in json.dumps(events)
 
 
 def test_session_and_audit_roll_back_together_on_failure(controller, monkeypatch):

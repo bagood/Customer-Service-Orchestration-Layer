@@ -12,6 +12,9 @@ Message = Annotated[
 ]
 ErrorCode = Literal["INVALID_ARGUMENTS", "SERVER_UNAVAILABLE", "UNKNOWN_TOOL"]
 WorkflowId = Literal["buy_package", "send_credit"]
+TransactionStatus = Literal["PENDING", "SUCCEEDED", "FAILED", "UNKNOWN"]
+# Small demo limits also bound integer parsing, SQLite values and reply sizes.
+MAX_MONEY_IDR = 1_000_000_000
 SessionState = Literal[
     "IDLE", "SELECT_PACKAGE", "ENTER_BALANCE", "CONFIRM_PURCHASE",
     "EXECUTE_PURCHASE", "FEEDBACK", "ENTER_MSISDN", "ENTER_AMOUNT",
@@ -47,7 +50,7 @@ class TurnInput(StrictModel):
 
 class PurchaseData(StrictModel):
     package: Literal["A", "B"]
-    balance_idr: int | None = Field(default=None, ge=0)
+    balance_idr: int | None = Field(default=None, ge=0, le=MAX_MONEY_IDR)
     transaction_id: int | None = Field(default=None, gt=0)
 
 
@@ -58,10 +61,15 @@ class PurchaseTransaction(StrictModel):
     status: Literal["SUCCEEDED"]
 
 
+class MockResult(StrictModel):
+    transaction_id: int = Field(gt=0)
+    status: Literal["SUCCEEDED", "FAILED", "UNKNOWN"]
+
+
 class TransferData(StrictModel):
     msisdn: Annotated[str, StringConstraints(pattern=r"^628[0-9]{8,11}$")]
-    amount_idr: int | None = Field(default=None, gt=0)
-    balance_idr: int | None = Field(default=None, ge=0)
+    amount_idr: int | None = Field(default=None, gt=0, le=MAX_MONEY_IDR)
+    balance_idr: int | None = Field(default=None, ge=0, le=MAX_MONEY_IDR)
     transaction_id: int | None = Field(default=None, gt=0)
 
 

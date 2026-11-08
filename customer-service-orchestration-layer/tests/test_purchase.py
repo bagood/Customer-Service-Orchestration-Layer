@@ -2,6 +2,7 @@
 
 import json
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -15,7 +16,7 @@ from csol.store import Store
 
 def send(controller, message, session_ref="demo-purchase"):
     return controller.process_turn(TurnInput(
-        session_ref=session_ref, message_id="stage03-message", message=message,
+        session_ref=session_ref, message_id=uuid4().hex, message=message,
     ))
 
 
@@ -188,7 +189,7 @@ def test_purchase_progress_and_feedback_survive_restart_without_reexecuting(cont
         assert saved(controller)[1] == receipt
     with controller.store.transaction() as connection:
         assert connection.execute("SELECT COUNT(*) FROM feedback").fetchone()[0] == 0
-        assert connection.execute("SELECT COUNT(*) FROM processed_messages").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM processed_messages").fetchone()[0] == 10
     backend.assert_called_once()
 
 
@@ -285,7 +286,7 @@ def test_success_reply_requires_persisted_success_status(controller, backend, mo
     with pytest.raises(ValueError, match="recorded SUCCEEDED"):
         send(controller, "yes")
     assert saved(controller)[0]["state"] == "CONFIRM_PURCHASE"
-    assert saved(controller)[1] == []
+    assert [row["status"] for row in saved(controller)[1]] == ["PENDING"]
     backend.assert_called_once()
 
 

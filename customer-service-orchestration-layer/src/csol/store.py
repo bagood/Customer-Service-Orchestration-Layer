@@ -7,7 +7,7 @@ from typing import Iterator
 
 from pydantic import Field
 
-from csol.models import Identifier, SessionState, StrictModel, WorkflowId
+from csol.models import Identifier, SessionState, StrictModel, TransactionStatus, TurnResponse, WorkflowId
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "csol.sqlite3"
 
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY,
     idempotency_key TEXT NOT NULL UNIQUE,
-    status TEXT NOT NULL
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'SUCCEEDED', 'FAILED', 'UNKNOWN'))
 );
 CREATE TABLE IF NOT EXISTS processed_messages (
     session_id TEXT NOT NULL REFERENCES sessions(session_id),
@@ -56,7 +56,7 @@ class Session(StrictModel):
     # Workflow definition version, distinct from the session state revision.
     version: int | None = Field(ge=1)
     state: SessionState
-    state_version: int = Field(ge=0)
+    state_version: int = Field(ge=0, le=2**63 - 1)
     data_json: str
     updated_at: str
 
@@ -74,11 +74,11 @@ class Store:
     def transaction(self) -> Iterator[sqlite3.Connection]:
         # A fresh, short-lived connection per turn avoids sharing SQLite handles
         # across HTTP threads. There is still just one database and one process.
-        with closing(sqlite3.connect(self.db_path)) as connection:
+        with closing(sqlite3.connect(self.db_path, timeout=1.0)) as connection:
             connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
             with connection:
-                connection.execute("BEGIN")
+                connection.execute("BEGIN IMMEDIATE")
                 yield connection
 
     def get_or_create_session(self, connection: sqlite3.Connection, session_id: str) -> Session:
@@ -92,18 +92,50 @@ class Store:
         row = connection.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
         return Session.model_validate(dict(row))
 
-    def save_session(self, connection: sqlite3.Connection, session: Session) -> Session:
-        connection.execute(
+    def save_session(
+        self, connection: sqlite3.Connection, session: Session, *, expected_state_version: int,
+    ) -> Session:
+        changed = connection.execute(
             """UPDATE sessions SET active_workflow = ?, version = ?, state = ?,
                state_version = ?, data_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-               WHERE session_id = ?""",
+               WHERE session_id = ? AND state_version = ?""",
             (session.active_workflow, session.version, session.state, session.state_version,
-             session.data_json, session.session_id),
-        )
+             session.data_json, session.session_id, expected_state_version),
+        ).rowcount
+        if changed != 1:
+            raise ValueError("Stale saved session revision")
         row = connection.execute(
             "SELECT * FROM sessions WHERE session_id = ?", (session.session_id,)
         ).fetchone()
         return Session.model_validate(dict(row))
+
+    def recorded_response(
+        self, connection: sqlite3.Connection, session_id: str, message_id: str,
+    ) -> TurnResponse | None:
+        row = connection.execute(
+            "SELECT response_json FROM processed_messages WHERE session_id = ? AND message_id = ?",
+            (session_id, message_id),
+        ).fetchone()
+        if row is None:
+            return None
+        response = TurnResponse.model_validate_json(row["response_json"])
+        if response.session_ref != session_id:
+            raise ValueError("Recorded response belongs to a different session")
+        if response.transaction is not None:
+            receipt = connection.execute(
+                "SELECT status FROM transactions WHERE id = ?", (response.transaction.transaction_id,),
+            ).fetchone()
+            if receipt is None or receipt["status"] != "SUCCEEDED":
+                raise ValueError("Replay requires a recorded SUCCEEDED transaction")
+        return response
+
+    def record_response(
+        self, connection: sqlite3.Connection, message_id: str, response: TurnResponse,
+    ) -> None:
+        connection.execute(
+            "INSERT INTO processed_messages (session_id, message_id, response_json) VALUES (?, ?, ?)",
+            (response.session_ref, message_id, response.model_dump_json()),
+        )
 
     def record_event(
         self, connection: sqlite3.Connection, event_type: str, before: Session, after: Session
@@ -138,12 +170,16 @@ class Store:
         ).fetchone()
 
     def finish_transaction(
-        self, connection: sqlite3.Connection, transaction_id: int, *, succeeded: bool
+        self, connection: sqlite3.Connection, transaction_id: int, *, status: TransactionStatus,
     ) -> None:
-        connection.execute(
+        if status not in {"SUCCEEDED", "FAILED", "UNKNOWN"}:
+            raise ValueError("Invalid terminal transaction status")
+        changed = connection.execute(
             "UPDATE transactions SET status = ? WHERE id = ? AND status = 'PENDING'",
-            ("SUCCEEDED" if succeeded else "UNKNOWN", transaction_id),
-        )
+            (status, transaction_id),
+        ).rowcount
+        if changed != 1:
+            raise ValueError("Transaction is not pending")
 
     def record_feedback(
         self, connection: sqlite3.Connection, session_id: str, rating: int | None,

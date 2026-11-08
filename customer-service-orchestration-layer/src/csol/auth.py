@@ -1,12 +1,15 @@
 """Deployment token validation and authentication before MCP dispatch."""
 
 import hmac
+import logging
 import os
 import re
 
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+LOGGER = logging.getLogger(__name__)
 
 
 def load_bearer_token() -> str:
@@ -33,6 +36,7 @@ class BearerTokenMiddleware:
         scheme, _, candidate = values[0].partition(" ") if len(values) == 1 else ("", "", "")
         matches = hmac.compare_digest(candidate.encode("latin-1"), self.token)
         if scheme.lower() != "bearer" or not matches:
+            LOGGER.warning("MCP request rejected; code=UNAUTHORIZED")
             response = JSONResponse(
                 {"error_code": "UNAUTHORIZED"},
                 status_code=401,

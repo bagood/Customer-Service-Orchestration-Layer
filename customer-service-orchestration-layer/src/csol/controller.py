@@ -1,14 +1,16 @@
 """Controller-owned telecom FSMs and feedback; all transactions are simulated."""
 
 import json
+import logging
 import re
 import sqlite3
+from collections.abc import Callable
 
 from csol.config import Configuration, normalize
-from csol.mock_transactions import _mock_buy_package, _mock_send_credit
+from csol.mock_transactions import TestOutcome, _mock_buy_package, _mock_send_credit
 from csol.models import (
-    ENTRY_STATES, PurchaseData, PurchaseTransaction, SessionState, TransferData, TurnInput,
-    TurnResponse,
+    ENTRY_STATES, MAX_MONEY_IDR, MockResult, PurchaseData, PurchaseTransaction,
+    SessionState, TransferData, TurnInput, TurnResponse,
 )
 from csol.router import match_intents
 from csol.store import Session, Store
@@ -27,40 +29,96 @@ FEEDBACK_REPLY = (
     "and return to the menu. Type cancel or batal to skip and return as well."
 )
 UNRESOLVED_REPLY = (
-    "The demo transaction outcome is unresolved. It will not be retried automatically. "
+    "The demo transaction is pending manual review; its outcome is unresolved. "
+    "It will not be retried automatically. This workflow is held for review."
+)
+FAILED_REPLY = (
+    "The demo transaction FAILED. It will not be retried automatically. "
     "Type cancel or batal to return to the menu."
 )
+LOGGER = logging.getLogger(__name__)
+CONFIRMATION_STATES = {"CONFIRM_PURCHASE", "CONFIRM_TRANSFER"}
 
 
 class Controller:
-    def __init__(self, store: Store, config: Configuration) -> None:
+    def __init__(
+        self, store: Store, config: Configuration, *, _test_mock_outcome: TestOutcome = "SUCCEEDED",
+    ) -> None:
         self.store = store
         self.config = config
+        # In-process test injection only: no tool field, environment setting or
+        # customer text can select the mock's outcome.
+        if _test_mock_outcome not in {"SUCCEEDED", "FAILED", "UNKNOWN", "TIMEOUT"}:
+            raise ValueError("Unsupported test mock outcome")
+        self._test_mock_outcome = _test_mock_outcome
 
     def process_turn(self, turn: TurnInput) -> TurnResponse:
         turn = TurnInput.model_validate(turn)
+        token = normalize(turn.message)
         with self.store.transaction() as connection:
             before = self.store.get_or_create_session(connection, turn.session_ref)
             self._validate_session(before)
+            recorded = self.store.recorded_response(connection, turn.session_ref, turn.message_id)
+            if recorded is not None:
+                return recorded
+
+            reserved_id = None
+            if before.state in CONFIRMATION_STATES and token in {"yes", "ya"}:
+                key = self._transaction_key(before, before.state_version)
+                record, created = self.store.obtain_transaction(connection, key)
+                if created:
+                    # Commit the PENDING fence BEFORE the private mock. A crash
+                    # or failure in the final session/audit/cache commit must
+                    # never erase evidence that invocation may have happened.
+                    connection.commit()
+                    connection.execute("BEGIN IMMEDIATE")
+                    current = self.store.get_or_create_session(connection, turn.session_ref)
+                    self._validate_session(current)
+                    if self._prerequisites(current) != self._prerequisites(before):
+                        raise ValueError("Saved prerequisites changed after reservation")
+                    before = current
+                    recorded = self.store.recorded_response(connection, turn.session_ref, turn.message_id)
+                    if recorded is not None:
+                        # A concurrent repeat recorded a conservative pending
+                        # reply in the gap. Preserve it and leave review required.
+                        return recorded
+                    reserved_id = record["id"]
             session = before
             reply = MENU_REPLY
             transaction = None
+            held = False
+            record = None
+            if before.state in CONFIRMATION_STATES:
+                record = self.store.transaction_by_key(
+                    connection, self._transaction_key(before, before.state_version),
+                )
+                if record is not None and record["status"] not in {
+                    "PENDING", "SUCCEEDED", "FAILED", "UNKNOWN",
+                }:
+                    raise ValueError("Invalid recorded transaction status")
 
-            if before.state == "FEEDBACK":
+            if (record is not None and record["id"] != reserved_id
+                    and record["status"] in {"PENDING", "UNKNOWN"}):
+                held = True
+                event, reply = "transaction_review_required", UNRESOLVED_REPLY
+            elif (record is not None and record["status"] == "FAILED"
+                  and token not in {"cancel", "batal", "no", "tidak"}):
+                event, reply = "transaction_failed", FAILED_REPLY
+            elif before.state == "FEEDBACK":
                 session, event, reply, transaction = self._feedback_turn(
                     connection, before, turn.message,
                 )
-            elif normalize(turn.message) in {"cancel", "batal"}:
+            elif token in {"cancel", "batal"}:
                 event = "cancelled"
                 session = self._cancel(before)
                 reply = "Demo workflow cancelled.\n" + MENU_REPLY
             elif before.active_workflow == "buy_package":
                 session, event, reply, transaction = self._purchase_turn(
-                    connection, before, turn.message,
+                    connection, before, turn.message, reserved_id,
                 )
             elif before.active_workflow == "send_credit":
                 session, event, reply, transaction = self._transfer_turn(
-                    connection, before, turn.message,
+                    connection, before, turn.message, reserved_id,
                 )
             else:
                 matches = match_intents(turn.message, self.config.routing)
@@ -81,30 +139,57 @@ class Controller:
                     event = "menu_shown"
 
             self._validate_session(session)
-            saved = self.store.save_session(connection, session)
+            saved = self.store.save_session(
+                connection, session, expected_state_version=before.state_version,
+            )
+            held = held or reply == UNRESOLVED_REPLY
             response = TurnResponse(
                 session_ref=saved.session_id,
                 mode=saved.active_workflow or "demo",
                 state=saved.state,
                 state_version=saved.state_version,
                 customer_reply=reply,
-                allowed_actions=["cancel"] if saved.active_workflow else ["buy_package", "send_credit"],
+                allowed_actions=([] if held else ["cancel"] if saved.active_workflow
+                                 else ["buy_package", "send_credit"]),
                 transaction=transaction,
                 simulated=True,
                 safe_to_display=True,
             )
             self.store.record_event(connection, event, before, saved)
-            return response
+            self.store.record_response(connection, turn.message_id, response)
+        # Fixed event codes and controller-owned states only; no message,
+        # message ID, session reference, recipient, balance or token in logs.
+        LOGGER.info(
+            "CSOL event=%s from=%s to=%s revision=%s",
+            event, before.state, saved.state, saved.state_version,
+        )
+        return response
+
+    @staticmethod
+    def _prerequisites(session: Session) -> tuple:
+        return (
+            session.active_workflow, session.version, session.state,
+            session.state_version, session.data_json,
+        )
 
     def _validate_session(self, session: Session) -> None:
         # YAML cannot authorize new states or transitions. Persisted unsupported
         # workflow versions and inconsistent rows fail closed as unavailable.
+        Session.model_validate(session)
+        if session.state_version > 2**63 - 4:
+            raise ValueError("Saved state revision exhausted")
         if session.active_workflow is None:
             if session.state != "IDLE" or session.version is not None or json.loads(session.data_json) != {}:
                 raise ValueError("Inconsistent idle session")
             return
         if session.version != self.config.workflows[session.active_workflow].version:
             raise ValueError("Unsupported saved workflow state or version")
+        minimum_revision = {
+            "buy_package": {"SELECT_PACKAGE": 1, "ENTER_BALANCE": 2, "CONFIRM_PURCHASE": 3, "FEEDBACK": 5},
+            "send_credit": {"ENTER_MSISDN": 1, "ENTER_AMOUNT": 2, "ENTER_BALANCE": 3, "CONFIRM_TRANSFER": 4, "FEEDBACK": 6},
+        }[session.active_workflow].get(session.state)
+        if minimum_revision is None or session.state_version < minimum_revision:
+            raise ValueError("Invalid saved state revision")
         if session.state == ENTRY_STATES[session.active_workflow]:
             if json.loads(session.data_json) != {}:
                 raise ValueError("Entry state must not contain workflow data")
@@ -164,7 +249,10 @@ class Controller:
     def _ascii_integer(message: str) -> int | None:
         # Inspect the raw input; Unicode normalization must not turn other
         # digit alphabets, whitespace, signs or separators into money.
-        return int(message) if re.fullmatch(r"[0-9]+", message) else None
+        if len(message) > 10 or re.fullmatch(r"[0-9]+", message) is None:
+            return None
+        value = int(message)
+        return value if value <= MAX_MONEY_IDR else None
 
     def _price(self, data: PurchaseData) -> int:
         return self.config.workflows["buy_package"].catalog[data.package].price_idr
@@ -181,7 +269,7 @@ class Controller:
         return f"{session.active_workflow}:{session.session_id}:{session.version}:{confirmation_revision}"
 
     def _purchase_turn(
-        self, connection: sqlite3.Connection, session: Session, message: str,
+        self, connection: sqlite3.Connection, session: Session, message: str, reserved_id: int | None,
     ) -> tuple[Session, str, str, PurchaseTransaction | None]:
         token = normalize(message)
         if session.state == "SELECT_PACKAGE":
@@ -209,7 +297,7 @@ class Controller:
             if token in {"no", "tidak"}:
                 return self._cancel(session), "purchase_declined", "Demo purchase cancelled.\n" + MENU_REPLY, None
             if token in {"yes", "ya"}:
-                return self._execute_purchase(connection, session)
+                return self._execute_purchase(connection, session, reserved_id)
             if self.store.transaction_by_key(
                 connection, self._transaction_key(session, session.state_version),
             ) is not None:
@@ -219,7 +307,7 @@ class Controller:
         raise ValueError("Unsupported purchase state")
 
     def _transfer_turn(
-        self, connection: sqlite3.Connection, session: Session, message: str,
+        self, connection: sqlite3.Connection, session: Session, message: str, reserved_id: int | None,
     ) -> tuple[Session, str, str, PurchaseTransaction | None]:
         if session.state == "ENTER_MSISDN":
             # Illustrative synthetic format: 08 followed by 8-11 ASCII digits,
@@ -260,7 +348,7 @@ class Controller:
             if token in {"no", "tidak"}:
                 return self._cancel(session), "transfer_declined", "Demo transfer cancelled.\n" + MENU_REPLY, None
             if token in {"yes", "ya"}:
-                return self._execute_transfer(connection, session)
+                return self._execute_transfer(connection, session, reserved_id)
             if self.store.transaction_by_key(
                 connection, self._transaction_key(session, session.state_version),
             ) is not None:
@@ -287,27 +375,20 @@ class Controller:
         return self._cancel(session), event, reply + MENU_REPLY, None
 
     def _execute_transfer(
-        self, connection: sqlite3.Connection, session: Session,
+        self, connection: sqlite3.Connection, session: Session, reserved_id: int | None,
     ) -> tuple[Session, str, str, PurchaseTransaction | None]:
         self._validate_session(session)
         if session.active_workflow != "send_credit" or session.state != "CONFIRM_TRANSFER":
             raise ValueError("Transfer execution requires the saved confirmation state")
         data = self._transfer_data(session)
         key = self._transaction_key(session, session.state_version)
-        record, created = self.store.obtain_transaction(connection, key)
+        record = self._run_reserved_mock(connection, session, key, reserved_id, _mock_send_credit)
         executing = self._advance(
             session, "EXECUTE_TRANSFER", data.model_copy(update={"transaction_id": record["id"]}),
         )
-        if created:
-            try:
-                result = PurchaseTransaction.model_validate(_mock_send_credit(record["id"]))
-                if result.transaction_id != record["id"]:
-                    raise ValueError("Mock returned a different transaction reference")
-            except Exception:
-                self.store.finish_transaction(connection, record["id"], succeeded=False)
-                return session, "transfer_unresolved", UNRESOLVED_REPLY, None
-            self.store.finish_transaction(connection, record["id"], succeeded=True)
-        elif record["status"] != "SUCCEEDED":
+        if record["status"] == "FAILED":
+            return session, "transfer_failed", FAILED_REPLY, None
+        if record["status"] != "SUCCEEDED":
             return session, "transfer_unresolved", UNRESOLVED_REPLY, None
 
         receipt = self._saved_receipt(connection, session, session.state_version)
@@ -320,7 +401,7 @@ class Controller:
         return completed, "transfer_succeeded", reply, receipt
 
     def _execute_purchase(
-        self, connection: sqlite3.Connection, session: Session,
+        self, connection: sqlite3.Connection, session: Session, reserved_id: int | None,
     ) -> tuple[Session, str, str, PurchaseTransaction | None]:
         # Recheck every prerequisite at the only call site of the private mock.
         self._validate_session(session)
@@ -328,22 +409,13 @@ class Controller:
             raise ValueError("Purchase execution requires the saved confirmation state")
         data = self._purchase_data(session)
         key = self._transaction_key(session, session.state_version)
-        record, created = self.store.obtain_transaction(connection, key)
+        record = self._run_reserved_mock(connection, session, key, reserved_id, _mock_buy_package)
         executing = self._advance(
             session, "EXECUTE_PURCHASE", data.model_copy(update={"transaction_id": record["id"]}),
         )
-        if created:
-            try:
-                result = PurchaseTransaction.model_validate(_mock_buy_package(record["id"]))
-                if result.transaction_id != record["id"]:
-                    raise ValueError("Mock returned a different transaction reference")
-            except Exception:
-                # Even the local mock must never turn an unknown outcome into
-                # success or silently execute an existing transaction again.
-                self.store.finish_transaction(connection, record["id"], succeeded=False)
-                return session, "purchase_unresolved", UNRESOLVED_REPLY, None
-            self.store.finish_transaction(connection, record["id"], succeeded=True)
-        elif record["status"] != "SUCCEEDED":
+        if record["status"] == "FAILED":
+            return session, "purchase_failed", FAILED_REPLY, None
+        if record["status"] != "SUCCEEDED":
             return session, "purchase_unresolved", UNRESOLVED_REPLY, None
 
         # Read the recorded outcome before constructing any success wording.
@@ -355,6 +427,39 @@ class Controller:
             "or operator balance verification. " + FEEDBACK_REPLY
         )
         return completed, "purchase_succeeded", reply, receipt
+
+    def _run_reserved_mock(
+        self, connection: sqlite3.Connection, session: Session, key: str,
+        reserved_id: int | None, operation: Callable[..., object],
+    ) -> sqlite3.Row:
+        # Re-read under the write lock immediately before invocation. The model
+        # cannot supply a reservation ID, state, version or saved prerequisites.
+        saved = self.store.get_or_create_session(connection, session.session_id)
+        self._validate_session(saved)
+        if self._prerequisites(saved) != self._prerequisites(session):
+            raise ValueError("Execution requires matching saved prerequisites")
+        record = self.store.transaction_by_key(connection, key)
+        if record is None:
+            raise ValueError("Execution requires a durable transaction reservation")
+        if record["id"] == reserved_id and record["status"] == "PENDING":
+            try:
+                result = MockResult.model_validate(
+                    operation(record["id"]) if self._test_mock_outcome == "SUCCEEDED"
+                    else operation(record["id"], _test_outcome=self._test_mock_outcome)
+                )
+                if result.transaction_id != record["id"]:
+                    raise ValueError("Mock returned a different transaction reference")
+                status = result.status
+            except Exception:
+                status = "UNKNOWN"
+            self.store.finish_transaction(connection, record["id"], status=status)
+            finished = self.store.transaction_by_key(connection, key)
+            if finished is None or finished["status"] != status:
+                if status == "SUCCEEDED":
+                    raise ValueError("A recorded SUCCEEDED transaction is required")
+                raise ValueError("Transaction finalization did not persist")
+            return finished
+        return record
 
     def _saved_receipt(
         self, connection: sqlite3.Connection, session: Session, confirmation_revision: int,

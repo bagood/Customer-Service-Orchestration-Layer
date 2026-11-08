@@ -2,6 +2,7 @@
 
 import json
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -15,7 +16,7 @@ from csol.store import Store
 
 def send(controller, message):
     return controller.process_turn(TurnInput(
-        session_ref="demo-transfer", message_id="stage04-message", message=message,
+        session_ref="demo-transfer", message_id=uuid4().hex, message=message,
     ))
 
 
@@ -286,7 +287,7 @@ def test_success_reply_requires_recorded_succeeded_status(controller, backend, m
     with pytest.raises(ValueError, match="recorded SUCCEEDED"):
         send(controller, "yes")
     assert saved(controller)[0]["state"] == "CONFIRM_TRANSFER"
-    assert saved(controller)[1] == []
+    assert [row["status"] for row in saved(controller)[1]] == ["PENDING"]
     backend.assert_called_once()
 
 

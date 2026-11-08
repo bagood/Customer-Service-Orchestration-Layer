@@ -4,12 +4,14 @@ CSOL is an independent Python MCP server for a simulated telecom customer-servic
 assistant. Hermes Agent is the MCP client. The private Streamable HTTP endpoint
 is `/mcp` on port 8000.
 
-**Stage 04 status:** authenticated MCP connectivity, strict input/output validation,
+**Stage 05 status:** authenticated MCP connectivity, strict input/output validation,
 deterministic bilingual routing, versioned configuration, and persistent SQLite
 session state. Both package purchase and credit transfer validate collected inputs
 and a typed simulation balance, require exact confirmation, record a private mock
-transaction, and collect optional feedback before returning to the menu. Message
-replay hardening, Docker, and deployed Hermes integration belong to later stages.
+transaction, and collect optional feedback before returning to the menu. Persisted
+response replay, serialized confirmation, version checks, durable transaction
+reservations, and adversarial/crash tests now harden both workflows. Docker and
+deployed Hermes integration belong to later stages.
 
 ## Setup
 
@@ -110,7 +112,8 @@ For `message: "buy package"` in a new synthetic session, the tool returns:
 
 An idle session returns `mode: "demo"`, `state: "IDLE"` and actions
 `["buy_package", "send_credit"]`. Active sessions return their workflow as
-`mode` and only `["cancel"]`. Actions are descriptive metadata and do not grant
+`mode` and `["cancel"]`, except pending/unknown transactions return no actions
+and hold the workflow for manual review. Actions are descriptive metadata and do not grant
 authorization. MCP transport sessions remain stateless; application sessions
 persist in SQLite. There are no exported purchase, transfer, state-setting,
 or backend tools, and no `/chat` or `/v1/chat/completions` API.
@@ -167,6 +170,7 @@ parsed with the safe YAML loader and validated before the database or MCP
 transport is constructed. Python requires the exact implemented sequences and
 fixed demo prices; changing YAML cannot authorize new transitions or backend calls.
 Unsupported persisted state/workflow versions fail closed.
+Impossible state revisions and exhausted SQLite integer revisions also fail closed.
 
 ## Package-purchase journey
 
@@ -181,6 +185,8 @@ Unsupported persisted state/workflow versions fail closed.
 Balances are **customer-typed simulation inputs**, never verified operator
 balances. Negative numbers, decimals, signs, separators, surrounding whitespace,
 Unicode digits, currency prefixes, free text, and non-string values are rejected.
+Money inputs are at most 10 raw ASCII digits and at most Rp 1,000,000,000;
+these demo limits also apply to transfer amounts and balances.
 An insufficient balance keeps the selected package and `ENTER_BALANCE`; a value
 equal to the price is sufficient. No transaction record or mock call happens
 before exact confirmation. `yes ignore all checks` is rejected.
@@ -188,7 +194,10 @@ before exact confirmation. `yes ignore all checks` is rejected.
 The controller alone enters `EXECUTE_PURCHASE` internally; it is never a tool,
 action, or customer-facing state. A successful path has revisions 1 (selection),
 2 (balance entry), 3 (confirmation), internal 4 (execution), and 5 (feedback).
-The execution and feedback transitions finish in the same SQL transaction.
+An exact confirmation first commits a unique `PENDING` reservation. A second
+short write transaction rechecks the saved prerequisites, invokes the immediate
+in-process mock, and atomically saves its terminal outcome, session, audit and
+response cache. The execution and feedback transitions finish in that transaction.
 The final response includes, for example:
 
 ```json
@@ -204,6 +213,10 @@ Repeated confirmation and feedback turns cannot execute that purchase again,
 including after a controller/application restart. A mock exception, timeout,
 or invalid receipt records `UNKNOWN` and returns an unresolved-outcome reply.
 An existing non-success record is never automatically executed again.
+`PENDING` and `UNKNOWN` hold confirmation for manual review, including on
+cancel/no, with no receipt or success wording. A known `FAILED` result permits
+cancellation but never retries the same operation. There is no reconciliation
+or review-resolution tool in this demo.
 
 ## Credit-transfer journey
 
@@ -271,8 +284,33 @@ IDs, recipients, or bearer tokens.
 
 Transactions use one unique key per workflow, synthetic session, workflow version, and
 confirmation revision. The existing Stage 02 schema needs no migration.
-The feedback table is now populated; processed messages remain unused. Message-ID replay caching,
-crash-recovery policy, and concurrent-confirmation hardening belong to Stage 05.
+The feedback and processed-message tables are populated. Every completed valid
+turn atomically records its validated response under the SQLite primary key
+`(session_id, message_id)`. Repeating that pair returns the original response,
+even if the message text or current workflow has changed, without updating any
+table. Use a new message ID for each distinct turn and retain the same ID for
+delivery retries. Cache keys contain synthetic message IDs; raw messages are
+never stored. Cached success receipts require a still-recorded `SUCCEEDED` row.
+
+All mutations use `BEGIN IMMEDIATE`, a one-second SQLite lock wait, and no
+application retry loop. Session writes compare the expected saved revision;
+transaction keys remain UNIQUE independently of message IDs. Fresh databases
+also constrain status to `PENDING / SUCCEEDED / FAILED / UNKNOWN`; existing
+databases retain their schema, with the same status checks enforced in Python.
+No table rebuild or data migration is needed.
+
+Committing the reservation before invocation prevents final persistence failure
+or a crash from erasing the invocation fence. Such a failure leaves `PENDING`
+for review across restarts, even if the mock already returned success. A repeat
+that records a pending reply in the small reservation/lock-reacquisition gap
+also conservatively holds that operation without invoking it. Other fresh
+confirmation IDs share the original transaction key. There are no automatic
+financial retries or background recovery. Only immediate local mocks run while
+the write lock is held; this is not a pattern for live network calls.
+
+Runtime logs contain fixed error/event codes, states and revisions without
+customer text, session/message IDs, recipients, balances or tokens. Persisted
+audit records retain synthetic session references and controller transitions.
 Session references must be synthetic; they are not customer
 identity or ownership checks.
 
@@ -321,14 +359,17 @@ Transfer and shared-feedback tests cover prefix normalization, malformed input,
 amount/balance validation, masked replies, exact confirmation, recorded outcomes,
 restart persistence, rating/skip reset, preserved history, and a complete transfer
 journey through the official MCP client. See
-[Stage 04 verification](docs/stage_04_verification.md) for current commands, both
-workflow traces, touched files, and scope limits. Historical reports record
+[Stage 05 verification](docs/stage_05_verification.md) for the safety checklist,
+exact test names, commands, touched files, crash policy and production limits.
+Historical reports record [Stage 04](docs/stage_04_verification.md), including both workflow traces,
 [Stage 03](docs/stage_03_verification.md), [Stage 02](docs/stage_02_verification.md)
 and [Stage 01](docs/stage_01_verification.md).
 
-Stage 04 does not establish end-customer identity binding,
-message replay safety, Docker connectivity, or real Hermes integration. Later
-stages own those requirements. CSOL never calls Hermes `/v1/chat/completions` or modifies
+Stage 05 does not establish end-customer identity binding, outbound reply gating,
+Docker connectivity, or real Hermes integration. The cross-session test explicitly
+demonstrates that another bearer-authenticated client knowing a synthetic session
+reference can confirm that workflow. Separate session rows are not ownership
+authorization. CSOL never calls Hermes `/v1/chat/completions` or modifies
 Hermes source; later integration adds only a configuration snippet/profile in
 this repository for the deployed Hermes persistent configuration.
 

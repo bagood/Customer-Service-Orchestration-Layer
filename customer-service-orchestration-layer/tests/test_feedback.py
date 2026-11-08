@@ -2,6 +2,7 @@
 
 import json
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 
@@ -12,7 +13,7 @@ from csol.models import TurnInput
 
 def send(controller, message):
     return controller.process_turn(TurnInput(
-        session_ref="demo-feedback", message_id="feedback-message", message=message,
+        session_ref="demo-feedback", message_id=uuid4().hex, message=message,
     ))
 
 

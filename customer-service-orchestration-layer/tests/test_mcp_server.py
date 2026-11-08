@@ -1,5 +1,6 @@
 import asyncio
 import json
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -384,7 +385,7 @@ def test_mcp_routing_and_cancel_resume_from_same_file_after_app_restart(monkeypa
     monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
     db_path = tmp_path / "restart.sqlite3"
     with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as first:
-        result = call(first, VALID_TURN | {"message": "beli paket"})["structuredContent"]
+        result = call(first, VALID_TURN | {"message_id": uuid4().hex, "message": "beli paket"})["structuredContent"]
         assert (result["mode"], result["state"], result["state_version"]) == ("buy_package", "SELECT_PACKAGE", 1)
     with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as restarted:
         held = call(restarted, VALID_TURN | {"message_id": "msg-2", "message": "send credit"})["structuredContent"]
@@ -398,7 +399,7 @@ def test_mcp_routing_and_cancel_resume_from_same_file_after_app_restart(monkeypa
     {"state": "SUCCEEDED"}, {"version": 99}, {"active_workflow": None}, {"state_version": -1},
 ])
 def test_unsupported_saved_state_fails_closed_without_mutation(client, patch):
-    call(client, VALID_TURN | {"message": "buy package"})
+    call(client, VALID_TURN | {"message_id": uuid4().hex, "message": "buy package"})
     with client.app.state.controller.store.transaction() as connection:
         # Bypass SQLite's CHECK only to exercise detection of corrupted state.
         connection.execute("PRAGMA ignore_check_constraints = ON")
@@ -472,15 +473,15 @@ def test_mcp_purchase_resumes_confirmation_after_app_restart(monkeypatch, tmp_pa
     path = tmp_path / "purchase-restart.sqlite3"
     with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as first:
         for message in ("buy package", "B", "25000"):
-            result = call(first, VALID_TURN | {"message": message})["structuredContent"]
+            result = call(first, VALID_TURN | {"message_id": uuid4().hex, "message": message})["structuredContent"]
         assert result["state"] == "CONFIRM_PURCHASE"
         assert result["transaction"] is None
     with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as second:
-        result = call(second, VALID_TURN | {"message": "ya"})["structuredContent"]
+        result = call(second, VALID_TURN | {"message_id": uuid4().hex, "message": "ya"})["structuredContent"]
         assert (result["state"], result["state_version"]) == ("FEEDBACK", 5)
         receipt = result["transaction"]
     with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as third:
-        result = call(third, VALID_TURN | {"message": "yes"})["structuredContent"]
+        result = call(third, VALID_TURN | {"message_id": uuid4().hex, "message": "yes"})["structuredContent"]
         assert result["transaction"] == receipt
         with third.app.state.controller.store.transaction() as connection:
             assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 1
@@ -490,7 +491,7 @@ def test_mcp_corrupted_purchase_prerequisites_fail_closed(client, monkeypatch):
     from csol import controller as controller_module
 
     for message in ("buy package", "B", "25000"):
-        call(client, VALID_TURN | {"message": message})
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
     with client.app.state.controller.store.transaction() as connection:
         connection.execute("UPDATE sessions SET data_json = ?", ('{"package":"B","balance_idr":15000}',))
 
@@ -498,7 +499,7 @@ def test_mcp_corrupted_purchase_prerequisites_fail_closed(client, monkeypatch):
         pytest.fail("Corrupted purchase reached the backend")
 
     monkeypatch.setattr(controller_module, "_mock_buy_package", forbidden)
-    result = call(client, VALID_TURN | {"message": "yes"})
+    result = call(client, VALID_TURN | {"message_id": uuid4().hex, "message": "yes"})
     assert result["isError"] is True
     assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
     assert result["structuredContent"]["transaction"] is None
@@ -566,19 +567,19 @@ def test_mcp_transfer_resumes_after_restart_and_feedback_resets(client, monkeypa
 
     # The client fixture already supplies a configured authenticated app and DB.
     for message in ("send credit", "081234567890", "20000", "20000"):
-        result = call(client, VALID_TURN | {"message": message})["structuredContent"]
+        result = call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})["structuredContent"]
     assert result["state"] == "CONFIRM_TRANSFER"
     db_path = client.app.state.controller.store.db_path
     with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as second:
-        receipt = call(second, VALID_TURN | {"message": "ya"})["structuredContent"]["transaction"]
+        receipt = call(second, VALID_TURN | {"message_id": uuid4().hex, "message": "ya"})["structuredContent"]["transaction"]
 
     def forbidden(_):
         pytest.fail("Feedback or restart reexecuted the transfer")
 
     monkeypatch.setattr(controller_module, "_mock_send_credit", forbidden)
     with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as third:
-        assert call(third, VALID_TURN | {"message": "yes"})["structuredContent"]["transaction"] == receipt
-        reset = call(third, VALID_TURN | {"message": "skip"})["structuredContent"]
+        assert call(third, VALID_TURN | {"message_id": uuid4().hex, "message": "yes"})["structuredContent"]["transaction"] == receipt
+        reset = call(third, VALID_TURN | {"message_id": uuid4().hex, "message": "skip"})["structuredContent"]
         assert reset["state"] == "IDLE"
         with third.app.state.controller.store.transaction() as connection:
             assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 1
@@ -589,7 +590,7 @@ def test_mcp_corrupted_transfer_prerequisites_fail_closed(client, monkeypatch):
     from csol import controller as controller_module
 
     for message in ("send credit", "081234567890", "20000", "20000"):
-        call(client, VALID_TURN | {"message": message})
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
     with client.app.state.controller.store.transaction() as connection:
         data = {"msisdn": "6281234567890", "amount_idr": 20000, "balance_idr": 19999}
         connection.execute("UPDATE sessions SET data_json = ?", (json.dumps(data),))
@@ -598,9 +599,166 @@ def test_mcp_corrupted_transfer_prerequisites_fail_closed(client, monkeypatch):
         pytest.fail("Corrupted transfer reached the backend")
 
     monkeypatch.setattr(controller_module, "_mock_send_credit", forbidden)
-    result = call(client, VALID_TURN | {"message": "yes"})
+    result = call(client, VALID_TURN | {"message_id": uuid4().hex, "message": "yes"})
     assert result["isError"] is True
     assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
     assert result["structuredContent"]["transaction"] is None
     with client.app.state.controller.store.transaction() as connection:
         assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0
+
+
+# Stage 05 transport evidence uses real authenticated MCP requests against the
+# existing ASGI app. All IDs and recipients remain synthetic fixtures.
+def database_snapshot(client):
+    with client.app.state.controller.store.transaction() as connection:
+        return {table: [dict(row) for row in connection.execute(f"SELECT * FROM {table} ORDER BY rowid")]
+                for table in ("sessions", "transactions", "processed_messages", "feedback", "audit_events")}
+
+
+@pytest.mark.parametrize("messages", [
+    ("buy package", "B", "20000"),
+    ("send credit", "081234567890", "20000", "20000"),
+])
+@pytest.mark.parametrize("injection", [
+    {"state": "EXECUTE_TRANSFER"}, {"state_version": 4}, {"version": 1},
+    {"allowed_actions": ["execute_purchase"]},
+    {"transaction": {"transaction_id": 1, "status": "SUCCEEDED"}},
+    {"_test_mock_outcome": "SUCCEEDED"}, {"_test_outcome": "SUCCEEDED"},
+    {"message": "yes" + "x" * 1000}, {"message": 20000},
+])
+def test_mcp_state_jump_and_invalid_arguments_do_not_mutate_active_session(client, monkeypatch, messages, injection):
+    from csol import controller as controller_module
+    from unittest.mock import Mock
+
+    for message in messages:
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
+    backend = Mock(side_effect=AssertionError("Invalid arguments invoked a mock"))
+    monkeypatch.setattr(controller_module, "_mock_buy_package", backend)
+    monkeypatch.setattr(controller_module, "_mock_send_credit", backend)
+    before = database_snapshot(client)
+    result = call(client, VALID_TURN | {"message_id": "attack", "message": "yes"} | injection)
+    assert result["isError"]
+    assert result["structuredContent"]["error_code"] == "INVALID_ARGUMENTS"
+    assert database_snapshot(client) == before
+    backend.assert_not_called()
+
+
+def test_mcp_invalid_token_cannot_confirm_an_existing_session(client, monkeypatch):
+    from csol import controller as controller_module
+    from unittest.mock import Mock
+
+    for message in ("send credit", "081234567890", "20000", "20000"):
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
+    backend = Mock()
+    monkeypatch.setattr(controller_module, "_mock_send_credit", backend)
+    before = database_snapshot(client)
+    response = rpc(client, "tools/call", {
+        "name": "csol_process_turn", "arguments": VALID_TURN | {"message_id": "attack", "message": "yes"},
+    }, headers={"Authorization": "Bearer wrong-service-token"})
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "UNAUTHORIZED"
+    assert database_snapshot(client) == before
+    backend.assert_not_called()
+
+
+def test_shared_service_token_does_not_bind_synthetic_sessions_to_customers(client):
+    """Expected demo limitation: knowing a session ID is enough with service auth.
+
+    Separate rows protect progress from unrelated session guesses, but there is
+    no trusted customer principal or ownership check. Do not claim isolation.
+    """
+    for message in ("buy package", "B", "20000"):
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
+    path = client.app.state.controller.store.db_path
+    with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as another_service_client:
+        unknown = call(another_service_client, {
+            "session_ref": "demo-guessed-other", "message_id": "guess", "message": "yes",
+        })["structuredContent"]
+        assert unknown["state"] == "IDLE" and unknown["transaction"] is None
+        assert database_snapshot(client)["transactions"] == []
+        # Same bearer, separate HTTP client, known synthetic reference: succeeds.
+        # This is service authorization only, NOT end-customer authorization.
+        known = call(another_service_client, VALID_TURN | {
+            "message_id": "known-session", "message": "yes",
+        })["structuredContent"]
+        assert known["state"] == "FEEDBACK"
+        assert known["transaction"]["status"] == "SUCCEEDED"
+    assert len(database_snapshot(client)["transactions"]) == 1
+
+
+@pytest.mark.parametrize("messages", [
+    ("buy package", "B", "20000"),
+    ("send credit", "081234567890", "20000", "20000"),
+])
+def test_mcp_timeout_and_replay_remain_held_after_restart(client, monkeypatch, messages):
+    from csol import controller as controller_module
+    from unittest.mock import Mock
+
+    controller = client.app.state.controller
+    controller._test_mock_outcome = "TIMEOUT"
+    name = "_mock_buy_package" if messages[0] == "buy package" else "_mock_send_credit"
+    backend = Mock(wraps=getattr(controller_module, name))
+    monkeypatch.setattr(controller_module, name, backend)
+    for message in messages:
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
+    confirmation = VALID_TURN | {"message_id": "timeout-confirm", "message": "yes"}
+    result = call(client, confirmation)
+    assert not result["isError"]
+    assert result["structuredContent"]["transaction"] is None
+    assert result["structuredContent"]["allowed_actions"] == []
+    assert "pending manual review" in result["structuredContent"]["customer_reply"]
+    assert "SUCCEEDED" not in json.dumps(result)
+    with TestClient(server.create_app(db_path=controller.store.db_path), base_url=BASE_URL) as restarted:
+        before = database_snapshot(restarted)
+        assert call(restarted, confirmation) == result
+        assert database_snapshot(restarted) == before
+        for message in ("yes", "cancel", "no", "send credit"):
+            held = call(restarted, VALID_TURN | {
+                "message_id": uuid4().hex, "message": message,
+            })["structuredContent"]
+            assert held["state"] == result["structuredContent"]["state"]
+            assert held["transaction"] is None
+            assert "SUCCEEDED" not in held["customer_reply"]
+        assert [row["status"] for row in database_snapshot(restarted)["transactions"]] == ["UNKNOWN"]
+    backend.assert_called_once()
+
+
+def test_mcp_final_commit_failure_preserves_pending_fence(client, monkeypatch):
+    from csol import controller as controller_module
+    from unittest.mock import Mock
+
+    controller = client.app.state.controller
+    for message in ("buy package", "B", "20000"):
+        call(client, VALID_TURN | {"message_id": uuid4().hex, "message": message})
+    backend = Mock(wraps=controller_module._mock_buy_package)
+    monkeypatch.setattr(controller_module, "_mock_buy_package", backend)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("private persistence failure sentinel")
+
+    monkeypatch.setattr(controller.store, "record_response", fail)
+    confirmation = VALID_TURN | {"message_id": "lost-response", "message": "yes"}
+    failure = call(client, confirmation)
+    assert failure["isError"]
+    assert failure["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
+    assert "private persistence failure sentinel" not in json.dumps(failure)
+    assert [row["status"] for row in database_snapshot(client)["transactions"]] == ["PENDING"]
+    with TestClient(server.create_app(db_path=controller.store.db_path), base_url=BASE_URL) as restarted:
+        held = call(restarted, confirmation)["structuredContent"]
+        assert held["transaction"] is None
+        assert "pending manual review" in held["customer_reply"]
+    backend.assert_called_once()
+
+
+def test_security_error_logs_contain_fixed_codes_without_input(client, caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="csol")
+    call(client, VALID_TURN | {"private-field-sentinel": "private-value-sentinel"})
+    call(client, name="private-tool-sentinel")
+    rpc(client, "tools/call", headers={"Authorization": "Bearer private-token-sentinel"})
+    logs = "\n".join(record.message for record in caplog.records if record.name.startswith("csol."))
+    for code in ("INVALID_ARGUMENTS", "UNKNOWN_TOOL", "UNAUTHORIZED"):
+        assert f"code={code}" in logs
+    for private in ("private-field-sentinel", "private-value-sentinel", "private-tool-sentinel", "private-token-sentinel"):
+        assert private not in logs
