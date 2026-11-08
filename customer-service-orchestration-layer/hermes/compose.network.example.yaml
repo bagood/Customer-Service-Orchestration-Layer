@@ -1,0 +1,14 @@
+# Overlay for the discovered, existing hermes-deployment/docker-compose.yml.
+# Keep its agent-network for provider/channel egress; add CSOL's private bridge.
+# This pins the already-installed v0.23.0 image; it creates no second Hermes.
+services:
+  hermes:
+    image: nousresearch/hermes-agent@sha256:adb7890916de63245523492be8f68f9d2095fecbec4e2a6dab7960381f0fc002
+    networks:
+      - agent-network
+      - csol-private
+
+networks:
+  csol-private:
+    external: true
+    name: csol-private

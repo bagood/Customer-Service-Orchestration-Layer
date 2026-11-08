@@ -1,0 +1,12 @@
+# Optional workaround for the VERIFIED v0.23.0 Docker Desktop socket failure.
+# This is a second mount of the SAME persisted directory, not a copy/profile.
+# The path deliberately exceeds Hermes's 100-byte AF_UNIX limit, selecting its
+# built-in private /tmp socket + private gateway.sock.path pointer. /opt/data
+# remains mounted. No socket ACL check or peer-UID check is disabled.
+# Relative sources resolve against the existing Hermes base Compose project.
+services:
+  hermes:
+    environment:
+      HERMES_HOME: /opt/hermes-runtime/private-control-socket-fallback-for-docker-desktop-bind-mounts/persistent-profile-data
+    volumes:
+      - ./data:/opt/hermes-runtime/private-control-socket-fallback-for-docker-desktop-bind-mounts/persistent-profile-data

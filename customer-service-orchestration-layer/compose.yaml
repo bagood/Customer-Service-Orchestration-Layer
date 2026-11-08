@@ -1,0 +1,26 @@
+name: csol
+services:
+  csol:
+    build: .
+    image: csol:stage06
+    restart: unless-stopped
+    init: true
+    environment:
+      CSOL_BEARER_TOKEN: ${CSOL_BEARER_TOKEN:?Supply CSOL_BEARER_TOKEN in .env or the environment}
+      CSOL_DB_PATH: /app/data/csol.sqlite3
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "8000/tcp"
+    networks:
+      private:
+        aliases: [csol]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+networks:
+  private:
+    name: csol-private
+    driver: bridge
+    internal: true

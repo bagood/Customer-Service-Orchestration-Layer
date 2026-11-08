@@ -4,14 +4,17 @@ CSOL is an independent Python MCP server for a simulated telecom customer-servic
 assistant. Hermes Agent is the MCP client. The private Streamable HTTP endpoint
 is `/mcp` on port 8000.
 
-**Stage 05 status:** authenticated MCP connectivity, strict input/output validation,
+**Stage 06 status:** private Docker deployment and integration with the existing
+Hermes gateway, in addition to authenticated MCP connectivity, strict input/output validation,
 deterministic bilingual routing, versioned configuration, and persistent SQLite
 session state. Both package purchase and credit transfer validate collected inputs
 and a typed simulation balance, require exact confirmation, record a private mock
 transaction, and collect optional feedback before returning to the menu. Persisted
 response replay, serialized confirmation, version checks, durable transaction
-reservations, and adversarial/crash tests now harden both workflows. Docker and
-deployed Hermes integration belong to later stages.
+reservations, and adversarial/crash tests harden both workflows. See the
+[private Docker/Hermes runbook](docs/private_docker_hermes.md) and
+[Stage 06 verification](docs/stage_06_verification.md) for actual compatibility,
+commands, test results and the customer-to-ledger trace.
 
 ## Setup
 
@@ -73,11 +76,12 @@ The script initializes MCP, verifies that discovery exposes exactly
 `csol_process_turn`, calls it, validates the structured response, and prints
 `MCP smoke: PASS`. It exits nonzero on failure. The token is read from the
 environment, never a command-line argument. `.env.example` documents the
-variable; `.env` is not loaded automatically. Keep actual secrets out of Git.
+variable; bare Python does not load `.env` automatically (Compose does). Keep actual secrets out of Git.
 Missing or malformed server configuration prevents startup.
 
-The server binds `0.0.0.0:8000` for the intended private service network. Run it
-on a trusted local/private network; container networking is a later stage.
+The server binds `0.0.0.0:8000` for the intended private service network. The
+default Compose deployment publishes no host port and uses the internal
+`csol-private` bridge; use an authorized client container for its smoke test.
 It uses one worker, disables proxy-header trust, and does not configure TLS.
 
 ## Tool contract
@@ -365,13 +369,12 @@ Historical reports record [Stage 04](docs/stage_04_verification.md), including b
 [Stage 03](docs/stage_03_verification.md), [Stage 02](docs/stage_02_verification.md)
 and [Stage 01](docs/stage_01_verification.md).
 
-Stage 05 does not establish end-customer identity binding, outbound reply gating,
-Docker connectivity, or real Hermes integration. The cross-session test explicitly
+End-customer identity binding and outbound reply gating remain absent. The cross-session test explicitly
 demonstrates that another bearer-authenticated client knowing a synthetic session
 reference can confirm that workflow. Separate session rows are not ownership
 authorization. CSOL never calls Hermes `/v1/chat/completions` or modifies
-Hermes source; later integration adds only a configuration snippet/profile in
-this repository for the deployed Hermes persistent configuration.
+Hermes source. Stage 06 supplies configuration fragments, a restricted CLI test
+profile and Compose overlays for the existing gateway and its persistent configuration.
 
 The eventual MVP remains limited to simulated `buy_package` and `send_credit`
 workflows with a deterministic router, controller-owned FSM, SQLite, private

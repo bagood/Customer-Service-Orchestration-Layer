@@ -1,0 +1,16 @@
+# MERGE only this entry into the existing /opt/data/config.yaml.
+# Supply the same token as CSOL through Hermes /opt/data/.env (mode 0600).
+# Verified against the installed Hermes v0.23.0 image; see docs/stage_06_verification.md.
+mcp_servers:
+  csol:
+    url: http://csol:8000/mcp
+    headers:
+      Authorization: "Bearer ${CSOL_BEARER_TOKEN}"
+    enabled: true
+    connect_timeout: 10
+    timeout: 30
+    supports_parallel_tool_calls: false
+    tools:
+      include: [csol_process_turn]
+      resources: false
+      prompts: false

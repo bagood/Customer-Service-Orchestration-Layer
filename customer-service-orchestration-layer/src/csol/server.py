@@ -141,7 +141,7 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
 
 
 def main() -> None:
-    # One private service worker. Docker networking is configured in a later stage.
+    # One private service worker; compose.yaml publishes no host port.
     uvicorn.run(create_app(), host="0.0.0.0", port=8000, proxy_headers=False)
 
 
