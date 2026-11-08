@@ -1,0 +1,6 @@
+# Direct dependencies for the Stage 00 development foundation.
+# pyproject.toml reads this file when installing the package.
+mcp==1.30.0
+pydantic==2.14.3
+PyYAML==6.0.3
+pytest==9.2.0

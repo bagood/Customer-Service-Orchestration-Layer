@@ -1,0 +1,45 @@
+# Python environments, packaging, and test output.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage*
+htmlcov/
+build/
+dist/
+
+# Local configuration, credentials, and generated secrets.
+.env
+.env.*
+!.env.example
+.envrc
+.direnv/
+.secrets/
+secrets/
+secrets.*
+credentials/
+credentials.*
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+*.token
+*.secret
+
+# Persistent data, including SQLite journals, WAL, and shared-memory files.
+data/*
+!data/.gitkeep
+*.sqlite*
+*.db
+*.db-*
+*.db3
+*.db3-*
+*.log
+
+# Local editor and OS files.
+.DS_Store
+.idea/
+.vscode/
