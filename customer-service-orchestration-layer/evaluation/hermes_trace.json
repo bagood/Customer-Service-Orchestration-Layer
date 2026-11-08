@@ -1,0 +1,359 @@
+{
+  "generated_at_utc": "2026-11-08T14:02:08.362727+00:00",
+  "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+  "turns": [
+    {
+      "message": "buy package",
+      "message_id": "hermes-b-01",
+      "calls": [
+        {
+          "type": "tool_use",
+          "name": "mcp__csol__csol_process_turn",
+          "tool_call_id": "call_fytcpUHzzMOGKM4yBZRtH9ik",
+          "input": {
+            "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+            "message_id": "hermes-b-01",
+            "message": "buy package"
+          },
+          "timestamp": 1794146535101
+        }
+      ],
+      "result": [
+        {
+          "type": "result",
+          "session_id": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+          "exit_code": 0,
+          "text": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "tokens": {
+            "input": 6310,
+            "output": 109,
+            "total": 6419,
+            "cache_read": 3011,
+            "cache_write": 0
+          },
+          "duration_ms": 8942,
+          "timestamp": 1794146538269
+        }
+      ],
+      "end_to_end_latency_ms": 9979.365,
+      "expected_state": "SELECT_PACKAGE",
+      "expected_state_version": 1,
+      "mcp_call_count": 1,
+      "call_correlated": true,
+      "reply_matches": true,
+      "canonical_response": {
+        "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+        "mode": "buy_package",
+        "state": "SELECT_PACKAGE",
+        "state_version": 1,
+        "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+        "allowed_actions": [
+          "cancel"
+        ],
+        "transaction": null,
+        "simulated": true,
+        "safe_to_display": true,
+        "error_code": null
+      }
+    },
+    {
+      "message": "B",
+      "message_id": "hermes-b-02",
+      "calls": [
+        {
+          "type": "tool_use",
+          "name": "mcp__csol__csol_process_turn",
+          "tool_call_id": "call_TIaqaIRIv23msV5HP1CVr4gz",
+          "input": {
+            "message": "B",
+            "message_id": "hermes-b-02",
+            "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f"
+          },
+          "timestamp": 1794146545637
+        }
+      ],
+      "result": [
+        {
+          "type": "result",
+          "session_id": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+          "exit_code": 0,
+          "text": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "tokens": {
+            "input": 13405,
+            "output": 224,
+            "total": 13629,
+            "cache_read": 9704,
+            "cache_write": 0
+          },
+          "duration_ms": 10811,
+          "timestamp": 1794146550150
+        }
+      ],
+      "end_to_end_latency_ms": 11855.122,
+      "expected_state": "ENTER_BALANCE",
+      "expected_state_version": 2,
+      "mcp_call_count": 1,
+      "call_correlated": true,
+      "reply_matches": true,
+      "canonical_response": {
+        "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+        "mode": "buy_package",
+        "state": "ENTER_BALANCE",
+        "state_version": 2,
+        "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+        "allowed_actions": [
+          "cancel"
+        ],
+        "transaction": null,
+        "simulated": true,
+        "safe_to_display": true,
+        "error_code": null
+      }
+    },
+    {
+      "message": "15000",
+      "message_id": "hermes-b-03",
+      "calls": [
+        {
+          "type": "tool_use",
+          "name": "mcp__csol__csol_process_turn",
+          "tool_call_id": "call_PfbaIcXJlk5HCvzTCB00FmjW",
+          "input": {
+            "message": "15000",
+            "message_id": "hermes-b-03",
+            "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f"
+          },
+          "timestamp": 1794146554827
+        }
+      ],
+      "result": [
+        {
+          "type": "result",
+          "session_id": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+          "exit_code": 0,
+          "text": "Insufficient typed demo balance. Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "tokens": {
+            "input": 21317,
+            "output": 346,
+            "total": 21663,
+            "cache_read": 17198,
+            "cache_write": 0
+          },
+          "duration_ms": 7441,
+          "timestamp": 1794146558675
+        }
+      ],
+      "end_to_end_latency_ms": 8520.669,
+      "expected_state": "ENTER_BALANCE",
+      "expected_state_version": 2,
+      "mcp_call_count": 1,
+      "call_correlated": true,
+      "reply_matches": true,
+      "canonical_response": {
+        "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+        "mode": "buy_package",
+        "state": "ENTER_BALANCE",
+        "state_version": 2,
+        "customer_reply": "Insufficient typed demo balance. Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+        "allowed_actions": [
+          "cancel"
+        ],
+        "transaction": null,
+        "simulated": true,
+        "safe_to_display": true,
+        "error_code": null
+      }
+    },
+    {
+      "message": "25000",
+      "message_id": "hermes-b-04",
+      "calls": [
+        {
+          "type": "tool_use",
+          "name": "mcp__csol__csol_process_turn",
+          "tool_call_id": "call_CHjgtNd8Q3s4u9yctSHOXMqk",
+          "input": {
+            "message": "25000",
+            "message_id": "hermes-b-04",
+            "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f"
+          },
+          "timestamp": 1794146561883
+        }
+      ],
+      "result": [
+        {
+          "type": "result",
+          "session_id": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+          "exit_code": 0,
+          "text": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "tokens": {
+            "input": 30057,
+            "output": 459,
+            "total": 30516,
+            "cache_read": 25522,
+            "cache_write": 0
+          },
+          "duration_ms": 4049,
+          "timestamp": 1794146563698
+        }
+      ],
+      "end_to_end_latency_ms": 5019.779,
+      "expected_state": "CONFIRM_PURCHASE",
+      "expected_state_version": 3,
+      "mcp_call_count": 1,
+      "call_correlated": true,
+      "reply_matches": true,
+      "canonical_response": {
+        "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+        "mode": "buy_package",
+        "state": "CONFIRM_PURCHASE",
+        "state_version": 3,
+        "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+        "allowed_actions": [
+          "cancel"
+        ],
+        "transaction": null,
+        "simulated": true,
+        "safe_to_display": true,
+        "error_code": null
+      }
+    },
+    {
+      "message": "yes",
+      "message_id": "hermes-b-05",
+      "calls": [
+        {
+          "type": "tool_use",
+          "name": "mcp__csol__csol_process_turn",
+          "tool_call_id": "call_DwbzsI7b2qxGLu6z1Ucp3j9m",
+          "input": {
+            "message": "yes",
+            "message_id": "hermes-b-05",
+            "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f"
+          },
+          "timestamp": 1794146566839
+        }
+      ],
+      "result": [
+        {
+          "type": "result",
+          "session_id": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+          "exit_code": 0,
+          "text": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 4. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "tokens": {
+            "input": 39622,
+            "output": 587,
+            "total": 40209,
+            "cache_read": 34655,
+            "cache_write": 0
+          },
+          "duration_ms": 4746,
+          "timestamp": 1794146569463
+        }
+      ],
+      "end_to_end_latency_ms": 5761.152,
+      "expected_state": "FEEDBACK",
+      "expected_state_version": 5,
+      "mcp_call_count": 1,
+      "call_correlated": true,
+      "reply_matches": true,
+      "canonical_response": {
+        "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+        "mode": "buy_package",
+        "state": "FEEDBACK",
+        "state_version": 5,
+        "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 4. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+        "allowed_actions": [
+          "cancel"
+        ],
+        "transaction": {
+          "transaction_id": 4,
+          "status": "SUCCEEDED"
+        },
+        "simulated": true,
+        "safe_to_display": true,
+        "error_code": null
+      }
+    },
+    {
+      "message": "skip",
+      "message_id": "hermes-b-06",
+      "calls": [
+        {
+          "type": "tool_use",
+          "name": "mcp__csol__csol_process_turn",
+          "tool_call_id": "call_2Y0OJFayVlXY5LVycEiyAjql",
+          "input": {
+            "message": "skip",
+            "message_id": "hermes-b-06",
+            "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f"
+          },
+          "timestamp": 1794146572775
+        }
+      ],
+      "result": [
+        {
+          "type": "result",
+          "session_id": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+          "exit_code": 0,
+          "text": "Demo feedback skipped.\nTelecom demo menu (simulation only):\n1. Beli paket / buy package (buy_package)\n2. Transfer pulsa / send credit (send_credit)\nThis menu turn does not execute a transaction.",
+          "tokens": {
+            "input": 50048,
+            "output": 694,
+            "total": 50742,
+            "cache_read": 44656,
+            "cache_write": 0
+          },
+          "duration_ms": 4031,
+          "timestamp": 1794146574473
+        }
+      ],
+      "end_to_end_latency_ms": 5009.106,
+      "expected_state": "IDLE",
+      "expected_state_version": 6,
+      "mcp_call_count": 1,
+      "call_correlated": true,
+      "reply_matches": true,
+      "canonical_response": {
+        "session_ref": "demo-hermes-7112752688cc4e1383bf5eafeca8e20f",
+        "mode": "demo",
+        "state": "IDLE",
+        "state_version": 6,
+        "customer_reply": "Demo feedback skipped.\nTelecom demo menu (simulation only):\n1. Beli paket / buy package (buy_package)\n2. Transfer pulsa / send credit (send_credit)\nThis menu turn does not execute a transaction.",
+        "allowed_actions": [
+          "buy_package",
+          "send_credit"
+        ],
+        "transaction": null,
+        "simulated": true,
+        "safe_to_display": true,
+        "error_code": null
+      }
+    }
+  ],
+  "passed": true,
+  "scope": "real configured Hermes CLI/gateway/model; synthetic transport metadata",
+  "correlation": "CLI conversation + tool arguments + SQLite processed-message response",
+  "customer_channel_coverage": "not measurable: trusted external channel message IDs unavailable",
+  "baseline": "baseline not measured",
+  "mcp_discovery_probe": [
+    "Persisted config and Authorization interpolation: PASS (secret redacted)",
+    "Unset remote credential fails closed: PASS",
+    "Hermes discovery/CLI tool surface: [\"mcp__csol__csol_process_turn\"]",
+    "Hermes tools/call: PASS; synthetic session: demo-hermes-probe-6ff09873c89a48c9bf352033a8202186",
+    "Hermes MCP probe: PASS"
+  ],
+  "hermes_session": "local-7dd07922486ce53512225f46bedfe86c1cdb3622f70e586403c2008f6b9c0bd1",
+  "transaction_id": 4,
+  "summary": {
+    "turns": 6,
+    "correlated_mcp_turns": 6,
+    "exact_reply_turns": 6,
+    "mcp_call_count": 6,
+    "latency_scope": "per CLI subprocess including gateway/provider/tool/final reply and Docker overhead",
+    "latency_method": "nearest rank, six synthetic turns; not a benchmark",
+    "p50_end_to_end_ms": 5761.152,
+    "p95_end_to_end_ms": 11855.122,
+    "tokens": "raw Hermes CLI result counters retained per turn; aggregation semantics unverified"
+  }
+}

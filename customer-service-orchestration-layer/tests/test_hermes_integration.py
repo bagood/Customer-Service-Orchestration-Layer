@@ -5,10 +5,13 @@ An omitted tool call or rewritten canonical reply fails and leaves a trace.
 """
 
 import json
+import math
 import os
 import sqlite3
 import subprocess
+import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -32,14 +35,24 @@ def test_existing_hermes_discovery_and_package_b_customer_to_ledger():
     assert "Hermes MCP probe: PASS" in probe.stdout
     print(probe.stdout, flush=True)
     session_ref = "demo-hermes-" + uuid.uuid4().hex
-    trace_path = ROOT / "data" / f"stage06-{session_ref}.json"
-    trace = {"session_ref": session_ref, "turns": []}
+    trace_path = Path(os.environ.get("CSOL_HERMES_TRACE_PATH", ROOT / "data" / f"stage07-{session_ref}.json"))
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    trace = {
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "session_ref": session_ref, "turns": [], "passed": False,
+        "scope": "real configured Hermes CLI/gateway/model; synthetic transport metadata",
+        "correlation": "CLI conversation + tool arguments + SQLite processed-message response",
+        "customer_channel_coverage": "not measurable: trusted external channel message IDs unavailable",
+        "baseline": "baseline not measured",
+        "mcp_discovery_probe": probe.stdout.strip().splitlines(),
+    }
     hermes_session = None
     transaction_id = None
     journey = [
         ("buy package", "SELECT_PACKAGE", 1),
         ("B", "ENTER_BALANCE", 2),
-        ("20000", "CONFIRM_PURCHASE", 3),
+        ("15000", "ENTER_BALANCE", 2),
+        ("25000", "CONFIRM_PURCHASE", 3),
         ("yes", "FEEDBACK", 5),
         ("skip", "IDLE", 6),
     ]
@@ -55,11 +68,22 @@ def test_existing_hermes_discovery_and_package_b_customer_to_ledger():
         ]
         if hermes_session:
             command += ["--resume", hermes_session]
-        run = subprocess.run(command, input=query, text=True, capture_output=True, timeout=120)
+        started = time.perf_counter()
+        try:
+            run = subprocess.run(command, input=query, text=True, capture_output=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            trace["turns"].append({"message_id": message_id, "error_code": "CLI_TIMEOUT"})
+            trace_path.write_text(json.dumps(trace, indent=2) + "\n")
+            raise
         events = [json.loads(line) for line in run.stdout.splitlines() if line.startswith("{")]
         terminal = [e for e in events if e.get("type") == "result"]
         calls = [e for e in events if e.get("type") == "tool_use"]
-        entry = {"message": message, "message_id": message_id, "calls": calls, "result": terminal}
+        entry = {
+            "message": message, "message_id": message_id, "calls": calls, "result": terminal,
+            "end_to_end_latency_ms": round((time.perf_counter() - started) * 1000, 3),
+            "expected_state": state, "expected_state_version": version,
+            "mcp_call_count": len(calls), "call_correlated": False, "reply_matches": False,
+        }
         trace["turns"].append(entry)
         trace_path.write_text(json.dumps(trace, indent=2) + "\n")
         assert run.returncode == 0 and terminal and terminal[-1]["exit_code"] == 0, terminal or run.stderr
@@ -76,21 +100,23 @@ def test_existing_hermes_discovery_and_package_b_customer_to_ledger():
                 (session_ref, message_id),
             ).fetchone()
             assert cached, "Hermes call did not reach the CSOL database"
+            entry["call_correlated"] = True
             payload = json.loads(cached[0])
             saved = db.execute("SELECT state,state_version FROM sessions WHERE session_id=?", (session_ref,)).fetchone()
             assert saved == (state, version)
             assert (payload["state"], payload["state_version"]) == (state, version)
             assert terminal[-1]["text"] == payload["customer_reply"], f"Canonical reply mismatch; see {trace_path}"
+            entry["reply_matches"] = True
             transactions = db.execute(
                 "SELECT id,status FROM transactions WHERE idempotency_key=?", (f"buy_package:{session_ref}:1:3",),
             ).fetchall()
-            if index < 4:
+            if index < 5:
                 assert transactions == []
                 assert payload["transaction"] is None
             else:
                 assert len(transactions) == 1 and transactions[0][1] == "SUCCEEDED"
                 transaction_id = transactions[0][0]
-            if index == 4:
+            if index == 5:
                 assert payload["transaction"] == {"transaction_id": transaction_id, "status": "SUCCEEDED"}
                 assert "Demo purchase SUCCEEDED" in payload["customer_reply"]
         entry["canonical_response"] = payload
@@ -113,5 +139,18 @@ def test_existing_hermes_discovery_and_package_b_customer_to_ledger():
     trace["hermes_session"] = hermes_session
     trace["transaction_id"] = transaction_id
     trace["passed"] = True
+    # CLI token counters may be cumulative across --resume turns. Preserve the
+    # raw per-result counters; do not sum them or invent model-token savings.
+    latencies = sorted(t["end_to_end_latency_ms"] for t in trace["turns"])
+    trace["summary"] = {
+        "turns": len(trace["turns"]),
+        "correlated_mcp_turns": sum(t["call_correlated"] for t in trace["turns"]),
+        "exact_reply_turns": sum(t["reply_matches"] for t in trace["turns"]),
+        "mcp_call_count": sum(t["mcp_call_count"] for t in trace["turns"]),
+        "latency_scope": "per CLI subprocess including gateway/provider/tool/final reply and Docker overhead",
+        "latency_method": "nearest rank, six synthetic turns; not a benchmark",
+        **{f"p{p}_end_to_end_ms": latencies[math.ceil(len(latencies) * p / 100) - 1] for p in (50, 95)},
+        "tokens": "raw Hermes CLI result counters retained per turn; aggregation semantics unverified",
+    }
     trace_path.write_text(json.dumps(trace, indent=2) + "\n")
     print(f"Hermes customer-to-ledger trace: {trace_path}; transaction={transaction_id}", flush=True)

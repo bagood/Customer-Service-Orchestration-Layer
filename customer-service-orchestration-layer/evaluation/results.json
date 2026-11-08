@@ -1,0 +1,4366 @@
+{
+  "generated_at_utc": "2026-11-08T14:03:49.875476+00:00",
+  "environment": {
+    "python": "3.12.13",
+    "mcp": "1.30.0"
+  },
+  "scope": "synthetic local MCP/ASGI and SQLite; parallel confirms use controller threads",
+  "bypass_scope": "controlled noncompliant client fixtures, not observed Hermes model behavior",
+  "summary": {
+    "scenarios": 25,
+    "passed": 25,
+    "failed": 0,
+    "simulated_transaction_count": 16,
+    "unauthorized_mock_executions": 0,
+    "duplicate_mock_executions": 0,
+    "mcp_call_count": 113,
+    "mcp_latency": {
+      "p50_ms": 4.179,
+      "p95_ms": 4.759
+    }
+  },
+  "hermes_chat": "not measured by this offline runner; see separate live CLI trace",
+  "customer_channel_coverage": "not measurable: no trusted channel identity/message correlation",
+  "baseline": "baseline not measured",
+  "production_safety": "BLOCKED: trusted channel identity and outbound approval gate absent",
+  "results": [
+    {
+      "id": "purchase_happy",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.618,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.372,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package A (Rp 10,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.173,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package A (Rp 10,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.926,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package A (Rp 10,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.372,
+        "p95_ms": 4.926
+      },
+      "mcp_latency_samples_ms": [
+        4.618,
+        4.372,
+        4.173,
+        4.926
+      ]
+    },
+    {
+      "id": "transfer_happy",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.247,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.208,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.174,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.217,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo transfer of Rp 20,000 to 628******7890 using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "transfer_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.858,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer SUCCEEDED: Rp 20,000 to 628******7890, transaction 1. Simulation only; no real credit movement or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.217,
+        "p95_ms": 4.858
+      },
+      "mcp_latency_samples_ms": [
+        4.247,
+        4.208,
+        4.174,
+        4.217,
+        4.858
+      ]
+    },
+    {
+      "id": "package_c",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.147,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "entry_state_held",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.101,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 2,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.101,
+        "p95_ms": 4.147
+      },
+      "mcp_latency_samples_ms": [
+        4.147,
+        4.101
+      ]
+    },
+    {
+      "id": "package_b_15000_then_25000",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.052,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.197,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "insufficient_balance",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.233,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Insufficient typed demo balance. Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.118,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.79,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.197,
+        "p95_ms": 4.79
+      },
+      "mcp_latency_samples_ms": [
+        4.052,
+        4.197,
+        4.233,
+        4.118,
+        4.79
+      ]
+    },
+    {
+      "id": "purchase_equal_balance",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.38,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.121,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.22,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.62,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.22,
+        "p95_ms": 4.62
+      },
+      "mcp_latency_samples_ms": [
+        4.38,
+        4.121,
+        4.22,
+        4.62
+      ]
+    },
+    {
+      "id": "transfer_equal_balance",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.531,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.385,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.322,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.228,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo transfer of Rp 20,000 to 628******7890 using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "transfer_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.888,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer SUCCEEDED: Rp 20,000 to 628******7890, transaction 1. Simulation only; no real credit movement or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.385,
+        "p95_ms": 4.888
+      },
+      "mcp_latency_samples_ms": [
+        4.531,
+        4.385,
+        4.322,
+        4.228,
+        4.888
+      ]
+    },
+    {
+      "id": "no_confirmation",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.338,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.32,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.176,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "confirmation_rejected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.117,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "IDLE",
+            "response_state": "IDLE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "IDLE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "purchase_declined",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "IDLE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.093,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase cancelled.\nTelecom demo menu (simulation only):\n1. Beli paket / buy package (buy_package)\n2. Transfer pulsa / send credit (send_credit)\nThis menu turn does not execute a transaction.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.176,
+        "p95_ms": 4.338
+      },
+      "mcp_latency_samples_ms": [
+        4.338,
+        4.32,
+        4.176,
+        4.117,
+        4.093
+      ]
+    },
+    {
+      "id": "malformed_msisdn",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.084,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "entry_state_held",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.026,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "entry_state_held",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.285,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 3,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.084,
+        "p95_ms": 4.285
+      },
+      "mcp_latency_samples_ms": [
+        4.084,
+        4.026,
+        4.285
+      ]
+    },
+    {
+      "id": "zero_negative_amount",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.09,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.145,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "invalid_amount",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.11,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "invalid_amount",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.081,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.09,
+        "p95_ms": 4.145
+      },
+      "mcp_latency_samples_ms": [
+        4.09,
+        4.145,
+        4.11,
+        4.081
+      ]
+    },
+    {
+      "id": "bad_transfer_balance",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.094,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.035,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.121,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "invalid_balance",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.1,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "invalid_balance",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.235,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 5,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "insufficient_balance",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.189,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Insufficient typed demo balance. Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 6,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.1,
+        "p95_ms": 4.235
+      },
+      "mcp_latency_samples_ms": [
+        4.094,
+        4.035,
+        4.121,
+        4.1,
+        4.235,
+        4.189
+      ]
+    },
+    {
+      "id": "fake_developer",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.241,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.098,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.043,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "confirmation_rejected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.045,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.045,
+        "p95_ms": 4.241
+      },
+      "mcp_latency_samples_ms": [
+        4.241,
+        4.098,
+        4.043,
+        4.045
+      ]
+    },
+    {
+      "id": "forged_tool_result",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.079,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.197,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.08,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "confirmation_rejected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.163,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.08,
+        "p95_ms": 4.197
+      },
+      "mcp_latency_samples_ms": [
+        4.079,
+        4.197,
+        4.08,
+        4.163
+      ]
+    },
+    {
+      "id": "forged_tool_arguments",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.166,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.117,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.097,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "error_code": "INVALID_ARGUMENTS",
+            "response_state": "UNAVAILABLE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": "INVALID_ARGUMENTS",
+            "response_state": "UNAVAILABLE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 0.878,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Invalid demo request. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.097,
+        "p95_ms": 4.166
+      },
+      "mcp_latency_samples_ms": [
+        4.166,
+        4.117,
+        4.097,
+        0.878
+      ]
+    },
+    {
+      "id": "duplicate_message",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.19,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.194,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.192,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.635,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 3.956,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.192,
+        "p95_ms": 4.635
+      },
+      "mcp_latency_samples_ms": [
+        4.19,
+        4.194,
+        4.192,
+        4.635,
+        3.956
+      ]
+    },
+    {
+      "id": "parallel_confirm",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.238,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.198,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.337,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "parallel_confirm",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK"
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "feedback_pending",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 5.442,
+          "latency_scope": "local harness operation",
+          "customer_reply": "Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 3,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.238,
+        "p95_ms": 4.337
+      },
+      "mcp_latency_samples_ms": [
+        4.238,
+        4.198,
+        4.337
+      ]
+    },
+    {
+      "id": "parallel_transfer_confirm",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.078,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.088,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.068,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.223,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo transfer of Rp 20,000 to 628******7890 using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "parallel_confirm",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK"
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "feedback_pending",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 4.016,
+          "latency_scope": "local harness operation",
+          "customer_reply": "Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.078,
+        "p95_ms": 4.223
+      },
+      "mcp_latency_samples_ms": [
+        4.078,
+        4.088,
+        4.068,
+        4.223
+      ]
+    },
+    {
+      "id": "failed_mock",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.236,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.133,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.024,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "FAILED"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "FAILED"
+            ],
+            "feedback": [],
+            "reason": "purchase_failed",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.574,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction FAILED. It will not be retried automatically. Type cancel or batal to return to the menu.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "FAILED"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "FAILED"
+            ],
+            "feedback": [],
+            "reason": "transaction_failed",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.158,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction FAILED. It will not be retried automatically. Type cancel or batal to return to the menu.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.158,
+        "p95_ms": 4.574
+      },
+      "mcp_latency_samples_ms": [
+        4.236,
+        4.133,
+        4.024,
+        4.574,
+        4.158
+      ]
+    },
+    {
+      "id": "unknown_mock",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.082,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.121,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.292,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.03,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo transfer of Rp 20,000 to 628******7890 using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "transfer_unresolved",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.623,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        },
+        {
+          "step": 5,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "transaction_review_required",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.435,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        },
+        {
+          "step": 6,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "transaction_review_required",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.08,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 7,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.121,
+        "p95_ms": 4.623
+      },
+      "mcp_latency_samples_ms": [
+        4.082,
+        4.121,
+        4.292,
+        4.03,
+        4.623,
+        4.435,
+        4.08
+      ]
+    },
+    {
+      "id": "timeout_restart",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.09,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.203,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.154,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "purchase_unresolved",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.57,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "restart",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE"
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "purchase_unresolved",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 4.262,
+          "latency_scope": "local harness operation",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        },
+        {
+          "step": 5,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "transaction_review_required",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.269,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        },
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.203,
+        "p95_ms": 4.57
+      },
+      "mcp_latency_samples_ms": [
+        4.09,
+        4.203,
+        4.154,
+        4.57,
+        4.269
+      ]
+    },
+    {
+      "id": "restart_resume",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.137,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.299,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.162,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "restart",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE"
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 4.032,
+          "latency_scope": "local harness operation",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.759,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        },
+        {
+          "step": 5,
+          "action": "restart",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK"
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 4.075,
+          "latency_scope": "local harness operation",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        },
+        {
+          "step": 6,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "feedback_pending",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.129,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        },
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        },
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.162,
+        "p95_ms": 4.759
+      },
+      "mcp_latency_samples_ms": [
+        4.137,
+        4.299,
+        4.162,
+        4.759,
+        4.129
+      ]
+    },
+    {
+      "id": "feedback_reset",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.2,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.138,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.221,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.168,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo transfer of Rp 20,000 to 628******7890 using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "transfer_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.711,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer SUCCEEDED: Rp 20,000 to 628******7890, transaction 1. Simulation only; no real credit movement or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        },
+        {
+          "step": 5,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "IDLE",
+            "feedback": [
+              [
+                5,
+                0
+              ]
+            ],
+            "response_state": "IDLE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "IDLE",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [
+              [
+                5,
+                0
+              ]
+            ],
+            "reason": "feedback_recorded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "IDLE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.475,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Thank you for rating this demo.\nTelecom demo menu (simulation only):\n1. Beli paket / buy package (buy_package)\n2. Transfer pulsa / send credit (send_credit)\nThis menu turn does not execute a transaction.",
+          "visible_reply": null
+        },
+        {
+          "step": 6,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [
+              [
+                5,
+                0
+              ]
+            ],
+            "reason": "workflow_started",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.104,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 7,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.2,
+        "p95_ms": 4.711
+      },
+      "mcp_latency_samples_ms": [
+        4.2,
+        4.138,
+        4.221,
+        4.168,
+        4.711,
+        4.475,
+        4.104
+      ]
+    },
+    {
+      "id": "feedback_skip",
+      "kind": "workflow",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.154,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.18,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.201,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "FEEDBACK",
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "actual": {
+            "state": "FEEDBACK",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [],
+            "reason": "purchase_succeeded",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "FEEDBACK",
+            "response_transaction": {
+              "transaction_id": 1,
+              "status": "SUCCEEDED"
+            }
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.776,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo purchase SUCCEEDED: Package B (Rp 20,000), transaction 1. Simulation only; no real purchase or operator balance verification. Please rate this demo from 1 to 5, or type skip/lewati to skip feedback and return to the menu. Type cancel or batal to skip and return as well.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "mock_calls": 1,
+            "state": "IDLE",
+            "feedback": [
+              [
+                null,
+                1
+              ]
+            ],
+            "response_state": "IDLE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "IDLE",
+            "transactions": [
+              "SUCCEEDED"
+            ],
+            "feedback": [
+              [
+                null,
+                1
+              ]
+            ],
+            "reason": "feedback_skipped",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "IDLE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.217,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo feedback skipped.\nTelecom demo menu (simulation only):\n1. Beli paket / buy package (buy_package)\n2. Transfer pulsa / send credit (send_credit)\nThis menu turn does not execute a transaction.",
+          "visible_reply": null
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.201,
+        "p95_ms": 4.776
+      },
+      "mcp_latency_samples_ms": [
+        4.154,
+        4.18,
+        4.201,
+        4.776,
+        4.217
+      ]
+    },
+    {
+      "id": "bypass_no_mcp",
+      "kind": "controlled_client_bypass",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.277,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.149,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.11,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "client_reply",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "ledger_unchanged": true,
+            "reply_fidelity": false
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null,
+            "ledger_unchanged": true,
+            "reply_fidelity": false
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 0.0,
+          "latency_scope": "local harness operation",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": "Your package purchase SUCCEEDED."
+        }
+      ],
+      "simulated_transaction_count": 0,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 3,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.149,
+        "p95_ms": 4.277
+      },
+      "mcp_latency_samples_ms": [
+        4.277,
+        4.149,
+        4.11
+      ]
+    },
+    {
+      "id": "bypass_failed_success_claim",
+      "kind": "controlled_client_bypass",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "SELECT_PACKAGE",
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "SELECT_PACKAGE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "SELECT_PACKAGE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.186,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "package_selected",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.178,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Package B (Rp 20,000) selected. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.093,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo purchase of Package B (Rp 20,000) using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "FAILED"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE",
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "FAILED"
+            ],
+            "feedback": [],
+            "reason": "purchase_failed",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.688,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction FAILED. It will not be retried automatically. Type cancel or batal to return to the menu.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "client_reply",
+          "expected": {
+            "transactions": [
+              "FAILED"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_PURCHASE",
+            "ledger_unchanged": true,
+            "reply_fidelity": false
+          },
+          "actual": {
+            "state": "CONFIRM_PURCHASE",
+            "transactions": [
+              "FAILED"
+            ],
+            "feedback": [],
+            "reason": "purchase_failed",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_PURCHASE",
+            "response_transaction": null,
+            "ledger_unchanged": true,
+            "reply_fidelity": false
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 0.0,
+          "latency_scope": "local harness operation",
+          "customer_reply": "The demo transaction FAILED. It will not be retried automatically. Type cancel or batal to return to the menu.",
+          "visible_reply": "Your package purchase SUCCEEDED."
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 4,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.178,
+        "p95_ms": 4.688
+      },
+      "mcp_latency_samples_ms": [
+        4.186,
+        4.178,
+        4.093,
+        4.688
+      ]
+    },
+    {
+      "id": "bypass_unknown_success_claim",
+      "kind": "controlled_client_bypass",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "step": 0,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_MSISDN",
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_MSISDN",
+            "transactions": [],
+            "feedback": [],
+            "reason": "workflow_started",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_MSISDN",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.243,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Credit-transfer demo selected. Enter a synthetic mobile recipient: 08 followed by 8-11 ASCII digits, or the equivalent 628... / +628... format. This is not proof of ownership; use synthetic test numbers only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 1,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_AMOUNT",
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_AMOUNT",
+            "transactions": [],
+            "feedback": [],
+            "reason": "recipient_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_AMOUNT",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.17,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Synthetic recipient 628******7890 selected. Enter a positive demo transfer amount in IDR using ASCII digits 0-9 only. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 2,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "ENTER_BALANCE",
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "ENTER_BALANCE",
+            "transactions": [],
+            "feedback": [],
+            "reason": "amount_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "ENTER_BALANCE",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.164,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Demo transfer amount Rp 20,000 to 628******7890. Enter your typed simulation balance in IDR using ASCII digits 0-9 only. This is not a verified operator balance. Type cancel or batal to return to the menu. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 3,
+          "action": "turn",
+          "expected": {
+            "transactions": [],
+            "mock_calls": 0,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [],
+            "feedback": [],
+            "reason": "balance_accepted",
+            "mock_calls": 0,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.179,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "Confirm the demo transfer of Rp 20,000 to 628******7890 using the saved typed simulation balance? Reply exactly yes/ya to confirm or no/tidak to cancel. This is not a verified operator balance. No transaction has been executed.",
+          "visible_reply": null
+        },
+        {
+          "step": 4,
+          "action": "turn",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_TRANSFER",
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "transfer_unresolved",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null
+          },
+          "mcp_call_count": 1,
+          "latency_ms": 4.589,
+          "latency_scope": "MCP/ASGI round trip",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": null
+        },
+        {
+          "step": 5,
+          "action": "client_reply",
+          "expected": {
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "mock_calls": 1,
+            "state": "CONFIRM_TRANSFER",
+            "ledger_unchanged": true,
+            "reply_fidelity": false
+          },
+          "actual": {
+            "state": "CONFIRM_TRANSFER",
+            "transactions": [
+              "UNKNOWN"
+            ],
+            "feedback": [],
+            "reason": "transfer_unresolved",
+            "mock_calls": 1,
+            "error_code": null,
+            "response_state": "CONFIRM_TRANSFER",
+            "response_transaction": null,
+            "ledger_unchanged": true,
+            "reply_fidelity": false
+          },
+          "mcp_call_count": 0,
+          "latency_ms": 0.0,
+          "latency_scope": "local harness operation",
+          "customer_reply": "The demo transaction is pending manual review; its outcome is unresolved. It will not be retried automatically. This workflow is held for review.",
+          "visible_reply": "Your credit transfer SUCCEEDED."
+        }
+      ],
+      "simulated_transaction_count": 1,
+      "unauthorized_mock_executions": 0,
+      "duplicate_mock_executions": 0,
+      "mcp_call_count": 5,
+      "mcp_discovery": [
+        {
+          "server": {
+            "name": "csol",
+            "title": null,
+            "version": "0.5.0",
+            "websiteUrl": null,
+            "icons": null
+          },
+          "protocol": "2025-11-25",
+          "tools": [
+            "csol_process_turn"
+          ]
+        }
+      ],
+      "mcp_latency": {
+        "p50_ms": 4.179,
+        "p95_ms": 4.589
+      },
+      "mcp_latency_samples_ms": [
+        4.243,
+        4.17,
+        4.164,
+        4.179,
+        4.589
+      ]
+    }
+  ]
+}

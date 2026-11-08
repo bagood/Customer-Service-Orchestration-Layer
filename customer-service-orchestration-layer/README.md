@@ -4,7 +4,13 @@ CSOL is an independent Python MCP server for a simulated telecom customer-servic
 assistant. Hermes Agent is the MCP client. The private Streamable HTTP endpoint
 is `/mcp` on port 8000.
 
-**Stage 06 status:** private Docker deployment and integration with the existing
+**Stage 07 status:** reproducible MVP evaluation and a six-turn real Hermes CLI
+study are recorded in [MVP_REPORT.md](MVP_REPORT.md), with machine-readable
+[scenarios and results](evaluation/). The study measures synthetic CLI turns;
+real customer-channel coverage is not measurable. Full production safety is
+blocked pending trusted channel identity and an outbound reply approval gate.
+
+The server supports private Docker deployment and integration with the existing
 Hermes gateway, in addition to authenticated MCP connectivity, strict input/output validation,
 deterministic bilingual routing, versioned configuration, and persistent SQLite
 session state. Both package purchase and credit transfer validate collected inputs
@@ -346,8 +352,17 @@ are rejected. Unknown paths return 404.
 ## Verification and limits
 
 ```sh
+.venv/bin/python scripts/evaluate_mvp.py
 .venv/bin/python -m pytest -q
 ```
+
+The evaluation runs 25 synthetic scenarios against temporary SQLite files using
+the official MCP client and real ASGI transport; two parallel-confirmation cases
+use controller threads. It writes `evaluation/results.json` and exits nonzero
+on any failed expectation or unauthorized/duplicate mock invocation. Three
+controlled client-output fixtures demonstrate response bypasses; these are
+separate from observed Hermes model behavior. No live model or Docker is needed
+for this command. See the report for the opt-in live study command and limits.
 
 The suite includes the two unchanged Stage 00 tests and tests the real ASGI
 application with the official MCP client, authentication, discovery, strict
