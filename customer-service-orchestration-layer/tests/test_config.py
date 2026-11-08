@@ -24,7 +24,9 @@ def test_example_configuration_parses():
 def test_versioned_workflows_and_catalog_load():
     config = load_configuration()
     assert set(config.routing.routes) == {"buy_package", "send_credit"}
-    assert config.workflows["buy_package"].states == ["SELECT_PACKAGE"]
+    assert config.workflows["buy_package"].states == [
+        "SELECT_PACKAGE", "ENTER_BALANCE", "CONFIRM_PURCHASE", "EXECUTE_PURCHASE", "FEEDBACK",
+    ]
     assert config.workflows["send_credit"].states == ["ENTER_MSISDN"]
     assert {workflow.version for workflow in config.workflows.values()} == {1}
     assert {name: item.price_idr for name, item in config.workflows["buy_package"].catalog.items()} == {
@@ -48,6 +50,7 @@ def test_versioned_workflows_and_catalog_load():
     ("workflows/buy_package.v1.yaml", {"catalog": {}}),
     ("workflows/buy_package.v1.yaml", {"catalog": {"A": {"price_idr": -1}, "B": {"price_idr": 20000}}}),
     ("workflows/buy_package.v1.yaml", {"catalog": {"A": {"price_idr": "10000"}, "B": {"price_idr": 20000}}}),
+    ("workflows/buy_package.v1.yaml", {"catalog": {"A": {"price_idr": 1}, "B": {"price_idr": 20000}}}),
     ("workflows/send_credit.v1.yaml", {"states": ["IDLE"]}),
     ("workflows/send_credit.v1.yaml", {"catalog": {"A": {"price_idr": 10000}}}),
     ("workflows/send_credit.v1.yaml", {"backend": "execute"}),

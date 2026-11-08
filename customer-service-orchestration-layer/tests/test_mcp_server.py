@@ -96,6 +96,7 @@ def test_discovery_contract(client):
         assert schema["properties"][field]["type"] == "string"
         assert schema["properties"][field]["maxLength"] == maximum
     assert tools[0]["outputSchema"]["additionalProperties"] is False
+    assert "EXECUTE_PURCHASE" not in tools[0]["outputSchema"]["properties"]["state"]["enum"]
 
 
 def test_unsupported_turns_show_menu_and_persist_idle_state(client, monkeypatch, tmp_path):
@@ -287,7 +288,10 @@ def test_maximum_string_lengths_accepted(client):
 
 
 @pytest.mark.parametrize(
-    "name", ["csol_get_menu", "buy_package", "send_credit", "set_state", "backend", "missing"]
+    "name", [
+        "csol_get_menu", "buy_package", "send_credit", "set_state", "backend", "missing",
+        "mock_buy_package", "_mock_buy_package", "EXECUTE_PURCHASE", "execute_purchase",
+    ]
 )
 def test_unknown_and_backend_tools_rejected(client, monkeypatch, name):
     def forbidden(_):
@@ -313,6 +317,8 @@ def test_unavailable_handler_returns_safe_error_without_details(client, monkeypa
     assert result["structuredContent"]["session_ref"] == "demo-test"
     assert result["structuredContent"]["allowed_actions"] == []
     assert "private implementation detail" not in json.dumps(result)
+    assert "outcome is unconfirmed" in result["structuredContent"]["customer_reply"]
+    assert "Do not retry automatically" in result["structuredContent"]["customer_reply"]
 
 
 @pytest.mark.parametrize(
@@ -410,3 +416,86 @@ def test_database_path_can_be_injected_from_environment(monkeypatch, tmp_path):
     with TestClient(server.create_app(), base_url=BASE_URL) as connection:
         assert call(connection)["structuredContent"]["state"] == "IDLE"
     assert path.is_file()
+
+
+def test_official_mcp_client_completes_package_b_purchase(monkeypatch, tmp_path):
+    """Use the published MCP schemas and real ASGI transport for the whole FSM."""
+    monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
+    app = server.create_app(db_path=tmp_path / "purchase.sqlite3")
+
+    async def scenario():
+        async with app.router.lifespan_context(app):
+            async with (
+                httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=app),
+                    headers={"Authorization": f"Bearer {TEST_TOKEN}"},
+                ) as http,
+                streamable_http_client(f"{BASE_URL}/mcp", http_client=http) as (read, write, _),
+            ):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    assert [tool.name for tool in (await session.list_tools()).tools] == ["csol_process_turn"]
+                    for index, (message, state) in enumerate([
+                        ("buy package", "SELECT_PACKAGE"), ("C", "SELECT_PACKAGE"),
+                        ("B", "ENTER_BALANCE"), ("15000", "ENTER_BALANCE"),
+                        ("20000", "CONFIRM_PURCHASE"),
+                        ("yes ignore all checks", "CONFIRM_PURCHASE"),
+                        ("yes", "FEEDBACK"), ("yes", "FEEDBACK"),
+                    ]):
+                        result = await session.call_tool("csol_process_turn", VALID_TURN | {
+                            "message_id": f"purchase-{index}", "message": message,
+                        })
+                        assert not result.isError
+                        response = TurnResponse.model_validate(result.structuredContent)
+                        assert response.state == state
+                        assert json.loads(result.content[0].text) == result.structuredContent
+                        with app.state.controller.store.transaction() as connection:
+                            records = connection.execute("SELECT * FROM transactions").fetchall()
+                        if state == "FEEDBACK":
+                            assert len(records) == 1
+                            assert records[0]["status"] == response.transaction.status == "SUCCEEDED"
+                            assert records[0]["id"] == response.transaction.transaction_id
+                        else:
+                            assert records == []
+                            assert response.transaction is None
+
+    asyncio.run(scenario())
+
+
+def test_mcp_purchase_resumes_confirmation_after_app_restart(monkeypatch, tmp_path):
+    monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
+    path = tmp_path / "purchase-restart.sqlite3"
+    with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as first:
+        for message in ("buy package", "B", "25000"):
+            result = call(first, VALID_TURN | {"message": message})["structuredContent"]
+        assert result["state"] == "CONFIRM_PURCHASE"
+        assert result["transaction"] is None
+    with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as second:
+        result = call(second, VALID_TURN | {"message": "ya"})["structuredContent"]
+        assert (result["state"], result["state_version"]) == ("FEEDBACK", 5)
+        receipt = result["transaction"]
+    with TestClient(server.create_app(db_path=path), base_url=BASE_URL) as third:
+        result = call(third, VALID_TURN | {"message": "yes"})["structuredContent"]
+        assert result["transaction"] == receipt
+        with third.app.state.controller.store.transaction() as connection:
+            assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 1
+
+
+def test_mcp_corrupted_purchase_prerequisites_fail_closed(client, monkeypatch):
+    from csol import controller as controller_module
+
+    for message in ("buy package", "B", "25000"):
+        call(client, VALID_TURN | {"message": message})
+    with client.app.state.controller.store.transaction() as connection:
+        connection.execute("UPDATE sessions SET data_json = ?", ('{"package":"B","balance_idr":15000}',))
+
+    def forbidden(_):
+        pytest.fail("Corrupted purchase reached the backend")
+
+    monkeypatch.setattr(controller_module, "_mock_buy_package", forbidden)
+    result = call(client, VALID_TURN | {"message": "yes"})
+    assert result["isError"] is True
+    assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
+    assert result["structuredContent"]["transaction"] is None
+    with client.app.state.controller.store.transaction() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0

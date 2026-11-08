@@ -8,7 +8,7 @@ from typing import Literal, Self
 import yaml
 from pydantic import Field, model_validator
 
-from csol.models import ENTRY_STATES, SessionState, StrictModel, WorkflowId
+from csol.models import ENTRY_STATES, WORKFLOW_STATES, SessionState, StrictModel, WorkflowId
 
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[2] / "configs"
 
@@ -49,11 +49,15 @@ class WorkflowConfig(StrictModel):
 
     @model_validator(mode="after")
     def validate_definition(self) -> Self:
-        if self.states != [ENTRY_STATES[self.workflow]]:
-            raise ValueError("Only the Python-defined entry state is supported in Stage 02")
+        if self.states != WORKFLOW_STATES[self.workflow]:
+            raise ValueError("States must match the Python-defined workflow sequence")
         expected_catalog = {"A", "B"} if self.workflow == "buy_package" else set()
         if set(self.catalog) != expected_catalog:
             raise ValueError("Package catalog requires A/B; credit catalog must be empty")
+        if self.workflow == "buy_package" and {
+            name: item.price_idr for name, item in self.catalog.items()
+        } != {"A": 10000, "B": 20000}:
+            raise ValueError("The demo catalog must use A = 10000 and B = 20000 IDR")
         return self
 
 

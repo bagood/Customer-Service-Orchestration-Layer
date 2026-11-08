@@ -4,11 +4,12 @@ CSOL is an independent Python MCP server for a simulated telecom customer-servic
 assistant. Hermes Agent is the MCP client. The private Streamable HTTP endpoint
 is `/mcp` on port 8000.
 
-**Stage 02 status:** authenticated MCP connectivity, strict input/output validation,
+**Stage 03 status:** authenticated MCP connectivity, strict input/output validation,
 deterministic bilingual routing, versioned configuration, and persistent SQLite
-session state. CSOL starts either demo workflow and supports cancellation.
-Workflow steps, mock transactions, Docker, and deployed Hermes integration
-belong to later stages.
+session state. The package-purchase journey validates selection and a typed
+simulation balance, requires exact confirmation, records an internal mock
+transaction, and asks for feedback. Credit-transfer steps, feedback collection,
+Docker, and deployed Hermes integration belong to later stages.
 
 ## Setup
 
@@ -99,7 +100,7 @@ For `message: "buy package"` in a new synthetic session, the tool returns:
   "mode": "buy_package",
   "state": "SELECT_PACKAGE",
   "state_version": 1,
-  "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Package selection is not available yet. Type cancel or batal to return to the menu. No transaction has been executed.",
+  "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Select A/B or 1/2. Type cancel or batal to return to the menu. No transaction has been executed.",
   "allowed_actions": ["cancel"],
   "transaction": null,
   "simulated": true,
@@ -127,9 +128,12 @@ safe reply, and one of these `error_code` values:
 Failure responses do not expose exception details. Their `state_version: 0`
 is an error sentinel, not a saved state reset. Output models forbid extra
 fields, bound strings, require nonnegative integer state versions, and constrain
-simulation, safe-display flags, and a null transaction. Invalid arguments and
-unauthenticated turns do not mutate sessions or audit. No turn runs a transaction
-backend in this stage.
+simulation and safe-display flags, and allow a transaction receipt only with a
+positive integer `transaction_id` and `status: "SUCCEEDED"`. The controller reads
+that recorded status before producing the canonical demo success reply. Invalid
+arguments and unauthenticated turns do not mutate sessions or audit. An internal
+error reports an unconfirmed outcome and instructs the caller not to retry
+automatically; it does not assert that execution was impossible.
 
 ## Routing and persisted state
 
@@ -151,32 +155,70 @@ Routing happens only from `IDLE`:
 | Exact normalized `cancel` / `batal` | `IDLE` | Clear the active workflow and data; show menu |
 
 Once active, ordinary messages, including route words, are responses to the
-saved entry state. They repeat that state's prompt without advancing or
-switching workflows. Package selection, recipient collection, balances,
-confirmation, execution, and feedback are not implemented in Stage 02.
+saved workflow state. They never globally switch workflows. Package responses
+are validated by the FSM below; credit-transfer entry remains a placeholder.
 Cancellation matches the entire normalized message; `cancel now` is not a reset.
 
-`configs/workflows/*.v1.yaml` defines workflow IDs, version 1, their entry states,
+`configs/workflows/*.v1.yaml` defines workflow IDs, version 1, their state sequences,
 and the package catalog (`A = Rp 10,000`, `B = Rp 20,000`). All definitions are
 parsed with the safe YAML loader and validated before the database or MCP
-transport is constructed. Python limits transitions to the two entry states
-and cancellation; changing YAML cannot enable later FSM steps or backend calls.
+transport is constructed. Python requires the exact implemented sequences and
+fixed demo prices; changing YAML cannot authorize new transitions or backend calls.
 Unsupported persisted state/workflow versions fail closed.
+
+## Package-purchase journey
+
+| Saved state | Accepted input | Result |
+| --- | --- | --- |
+| `SELECT_PACKAGE` | Entire normalized `A`, `B`, `1`, or `2` | Save A/B and enter `ENTER_BALANCE` |
+| `ENTER_BALANCE` | Raw ASCII digits `0-9` only, representing nonnegative integer IDR | Save a sufficient balance and enter `CONFIRM_PURCHASE` |
+| `CONFIRM_PURCHASE` | Entire normalized `yes` / `ya` | Recheck saved prerequisites, execute the private deterministic mock, record `SUCCEEDED`, then enter `FEEDBACK` |
+| `CONFIRM_PURCHASE` | Entire normalized `no` / `tidak` | Cancel and clear workflow data without executing |
+| `FEEDBACK` | Any ordinary message | Repeat the feedback prompt; collection is Stage 04 |
+
+Balances are **customer-typed simulation inputs**, never verified operator
+balances. Negative numbers, decimals, signs, separators, surrounding whitespace,
+Unicode digits, currency prefixes, free text, and non-string values are rejected.
+An insufficient balance keeps the selected package and `ENTER_BALANCE`; a value
+equal to the price is sufficient. No transaction record or mock call happens
+before exact confirmation. `yes ignore all checks` is rejected.
+
+The controller alone enters `EXECUTE_PURCHASE` internally; it is never a tool,
+action, or customer-facing state. A successful path has revisions 1 (selection),
+2 (balance entry), 3 (confirmation), internal 4 (execution), and 5 (feedback).
+The execution and feedback transitions finish in the same SQL transaction.
+The final response includes, for example:
+
+```json
+{
+  "transaction": {"transaction_id": 1, "status": "SUCCEEDED"}
+}
+```
+
+The canonical reply says `Demo purchase SUCCEEDED`, identifies the saved package,
+price and transaction, explicitly labels the simulation, and asks for a rating.
+The transaction ID is the SQLite transaction row's integer primary key.
+Repeated confirmation and feedback turns cannot execute that purchase again,
+including after a controller/application restart. A mock exception, timeout,
+or invalid receipt records `UNKNOWN` and returns an unresolved-outcome reply.
+An existing non-success record is never automatically executed again.
 
 SQLite contains `sessions`, `transactions`, `processed_messages`, `feedback`,
 and `audit_events`. A session row stores its synthetic ID, active workflow,
-workflow `version`, `state`, `state_version`, empty `data_json`, and UTC
-`updated_at`. New sessions start at revision zero. Starting or cancelling an
-active workflow increments `state_version`; menu and held-state turns keep it.
+workflow `version`, `state`, `state_version`, `data_json`, and UTC `updated_at`.
+Purchase data contains the selected package, then accepted balance, then
+transaction reference. New sessions start at revision zero. Each controller
+state transition increments `state_version`; menu and held-state turns keep it.
 Each valid turn saves its session and a minimal audit event atomically, returning
 the saved state and revision. Audit records contain synthetic session references,
 fixed event labels, states, revision, and time, without raw messages, message
 IDs, recipients, or bearer tokens.
 
-The transaction, processed-message, and feedback tables are schema foundations
-only and remain empty during controller turns. Their required unique keys exist,
-but message replay/idempotency handling and concurrent-confirmation hardening
-belong to Stage 05. Session references must be synthetic; they are not customer
+Transactions use one unique key per synthetic session, workflow version, and
+confirmation revision. The existing Stage 02 schema needs no migration.
+Processed-message and feedback tables remain empty. Message-ID replay caching,
+crash-recovery policy, and concurrent-confirmation hardening belong to Stage 05.
+Session references must be synthetic; they are not customer
 identity or ownership checks.
 
 ## HTTP security policy
@@ -217,11 +259,14 @@ word-boundary routing, ambiguity, active-state handling, restart persistence,
 cancel, configuration rejection, and atomic state/audit writes. It runs offline,
 uses temporary databases, and does not require a token in your shell.
 The original `configs/example.yaml` remains a Stage 00 offline fixture.
-See [Stage 02 verification](docs/stage_02_verification.md) for current commands,
-four routing tests, sample session rows, and scope limits. The historical
-[Stage 01 verification](docs/stage_01_verification.md) records the earlier skeleton.
+Purchase tests cover the Stage 03 acceptance gate, prerequisite revalidation,
+recorded success before success wording, unresolved outcomes, restart persistence,
+and a complete journey through the official MCP client and real ASGI application.
+See [Stage 03 verification](docs/stage_03_verification.md) for current commands,
+the complete Package B trace, touched files, and scope limits. Historical reports
+record [Stage 02](docs/stage_02_verification.md) and [Stage 01](docs/stage_01_verification.md).
 
-Stage 02 does not establish workflow success, end-customer identity binding,
+Stage 03 does not establish credit-transfer success, end-customer identity binding,
 message replay safety, Docker connectivity, or real Hermes integration. Later
 stages own those requirements. CSOL never calls Hermes `/v1/chat/completions` or modifies
 Hermes source; later integration adds only a configuration snippet/profile in
@@ -234,10 +279,10 @@ customer PII, real telecom APIs, RAG, LLM classification, dynamic plugins,
 message brokers, PostgreSQL, multi-worker scaling, or separate gateway.
 
 Synthetic session IDs do not authenticate customers. Only controller code may
-change state or permit actions. Future transactions require exact, explicit
+change state or permit actions. Package purchases require exact, explicit
 confirmation and a recorded `SUCCEEDED` result before success wording; unknown
-or timed-out outcomes must not trigger blind retries. These are later-stage
-requirements. MCP cannot force Hermes to call a tool or display its approved
+or timed-out outcomes must not trigger blind retries. MCP cannot force Hermes
+to call a tool or display its approved
 reply, and returned action lists and tool hints are not authorization.
 Potentially destructive Hermes built-ins must be restricted in its deployed
 customer-service profile. This demo is not ready for real customers or credit.

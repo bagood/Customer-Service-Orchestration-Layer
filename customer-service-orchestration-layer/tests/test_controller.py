@@ -21,7 +21,7 @@ def turn(controller, message, message_id="message-1", session_ref="demo-state"):
 def test_active_workflow_never_globally_reroutes(controller, intent, state, other_intent):
     started = turn(controller, intent)
     # Even repeated route words are responses to the saved entry state.
-    for index, message in enumerate((intent, other_intent, "beli paket dan send credit", "A", "yes")):
+    for index, message in enumerate((intent, other_intent, "beli paket dan send credit", "C", "yes")):
         response = turn(controller, message, f"followup-{index}")
         assert (response.mode, response.state, response.state_version) == (started.mode, state, 1)
         assert response.customer_reply == started.customer_reply

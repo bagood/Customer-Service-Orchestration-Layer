@@ -1,4 +1,4 @@
-"""One persistent SQLite file for a single-process demo; no backend operations."""
+"""One persistent SQLite file for a single-process telecom simulation."""
 
 import sqlite3
 from contextlib import closing, contextmanager
@@ -115,4 +115,32 @@ class Store:
                (session_id, event_type, from_state, to_state, state_version)
                VALUES (?, ?, ?, ?, ?)""",
             (after.session_id, event_type, before.state, after.state, after.state_version),
+        )
+
+    def obtain_transaction(
+        self, connection: sqlite3.Connection, idempotency_key: str
+    ) -> tuple[sqlite3.Row, bool]:
+        inserted = connection.execute(
+            """INSERT INTO transactions (idempotency_key, status) VALUES (?, 'PENDING')
+               ON CONFLICT(idempotency_key) DO NOTHING""",
+            (idempotency_key,),
+        ).rowcount == 1
+        row = connection.execute(
+            "SELECT * FROM transactions WHERE idempotency_key = ?", (idempotency_key,),
+        ).fetchone()
+        return row, inserted
+
+    def transaction_by_key(
+        self, connection: sqlite3.Connection, idempotency_key: str
+    ) -> sqlite3.Row | None:
+        return connection.execute(
+            "SELECT * FROM transactions WHERE idempotency_key = ?", (idempotency_key,),
+        ).fetchone()
+
+    def finish_transaction(
+        self, connection: sqlite3.Connection, transaction_id: int, *, succeeded: bool
+    ) -> None:
+        connection.execute(
+            "UPDATE transactions SET status = ? WHERE id = ? AND status = 'PENDING'",
+            ("SUCCEEDED" if succeeded else "UNKNOWN", transaction_id),
         )

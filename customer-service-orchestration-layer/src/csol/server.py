@@ -1,4 +1,4 @@
-"""Authenticated MCP Streamable HTTP transport with SQLite-backed routing."""
+"""Authenticated MCP transport with a SQLite-backed demo purchase controller."""
 
 import json
 import logging
@@ -28,7 +28,10 @@ MAX_REQUEST_BODY_SIZE = 16 * 1024
 def error_response(code: ErrorCode, session_ref: str | None = None) -> TurnResponse:
     replies = {
         "INVALID_ARGUMENTS": "Invalid demo request. No transaction has been executed.",
-        "SERVER_UNAVAILABLE": "The demo service is unavailable. No transaction has been executed.",
+        "SERVER_UNAVAILABLE": (
+            "The demo service is unavailable. The transaction outcome is unconfirmed. "
+            "Do not retry automatically."
+        ),
         "UNKNOWN_TOOL": "This tool is unavailable. No transaction has been executed.",
     }
     return TurnResponse(
@@ -64,7 +67,7 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
         db_path if db_path is not None else Path(os.environ.get("CSOL_DB_PATH", DEFAULT_DB_PATH))
     )
     controller = Controller(store, config)
-    server = Server("csol", version="0.2.0")
+    server = Server("csol", version="0.3.0")
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
@@ -73,7 +76,8 @@ def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG
                 name="csol_process_turn",
                 description=(
                     "Process a synthetic telecom demo turn with deterministic routing and "
-                    "persistent state. Workflow steps and transactions are not available yet. "
+                    "persistent state. Package purchases use typed simulation balances, "
+                    "exact confirmation and an internal mock transaction. "
                     "Session references do not "
                     "authenticate customers. Returned actions do not grant authorization."
                 ),

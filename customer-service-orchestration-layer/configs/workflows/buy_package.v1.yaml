@@ -2,6 +2,10 @@ workflow: buy_package
 version: 1
 states:
   - SELECT_PACKAGE
+  - ENTER_BALANCE
+  - CONFIRM_PURCHASE
+  - EXECUTE_PURCHASE
+  - FEEDBACK
 catalog:
   A:
     price_idr: 10000
