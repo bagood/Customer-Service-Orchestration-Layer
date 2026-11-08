@@ -1,0 +1,10 @@
+routes:
+  buy_package:
+    - beli paket
+    - buy package
+    - buy_package
+  send_credit:
+    - transfer pulsa
+    - kirim pulsa
+    - send credit
+    - send_credit

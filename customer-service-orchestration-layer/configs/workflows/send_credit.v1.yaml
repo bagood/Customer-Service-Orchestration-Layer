@@ -1,0 +1,5 @@
+workflow: send_credit
+version: 1
+states:
+  - ENTER_MSISDN
+catalog: {}

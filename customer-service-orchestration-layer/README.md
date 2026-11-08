@@ -4,10 +4,11 @@ CSOL is an independent Python MCP server for a simulated telecom customer-servic
 assistant. Hermes Agent is the MCP client. The private Streamable HTTP endpoint
 is `/mcp` on port 8000.
 
-**Stage 01 status:** authenticated MCP connectivity, strict input/output validation,
-and a fixed two-option demo menu. Every valid turn returns that menu. There is
-no router, workflow, state machine, database, transaction gateway, Docker setup,
-or deployed Hermes connection yet.
+**Stage 02 status:** authenticated MCP connectivity, strict input/output validation,
+deterministic bilingual routing, versioned configuration, and persistent SQLite
+session state. CSOL starts either demo workflow and supports cancellation.
+Workflow steps, mock transactions, Docker, and deployed Hermes integration
+belong to later stages.
 
 ## Setup
 
@@ -29,7 +30,7 @@ Package metadata permits Python 3.11+, but 3.12.13 is the tested interpreter.
 | --- | --- | --- |
 | Official MCP Python SDK | 1.30.0 | Streamable HTTP server and client |
 | Pydantic | 2.14.3 | Strict tool input/output models |
-| PyYAML | 6.0.3 | Existing offline configuration sample |
+| PyYAML | 6.0.3 | Safe loading of route and workflow configuration |
 | pytest | 9.2.0 | Automated verification |
 | Starlette | 1.10.0 | ASGI application and test client |
 | Uvicorn | 0.54.0 | HTTP server |
@@ -52,6 +53,12 @@ Start the server in that shell:
 ```sh
 .venv/bin/python -m csol.server
 ```
+
+The SQLite file defaults to `data/csol.sqlite3`, independent of the current
+directory. Optionally export `CSOL_DB_PATH=/absolute/path/to/csol.sqlite3`
+before starting. Its parent directory is created automatically. Relative
+overrides resolve from the working directory. Keep this file across restarts
+and use a single server process. Database files and journals are gitignored.
 
 In a second shell with **the same token injected**, run the official MCP client:
 
@@ -84,27 +91,28 @@ Unexpected fields are rejected, including supplied state, permissions, and
 transaction data. The MCP discovery schemas are generated from the same
 Pydantic models used for validation.
 
-A valid turn returns:
+For `message: "buy package"` in a new synthetic session, the tool returns:
 
 ```json
 {
-  "session_ref": "demo-smoke",
-  "mode": "demo",
-  "state": "MENU",
-  "state_version": 0,
-  "customer_reply": "Telecom demo menu (simulation only):\n1. Buy a package (buy_package)\n2. Send credit (send_credit)\nWorkflows are not available yet. No transaction has been executed.",
-  "allowed_actions": ["buy_package", "send_credit"],
+  "session_ref": "demo-buy",
+  "mode": "buy_package",
+  "state": "SELECT_PACKAGE",
+  "state_version": 1,
+  "customer_reply": "Package demo selected. Catalog: A Rp 10,000; B Rp 20,000. Package selection is not available yet. Type cancel or batal to return to the menu. No transaction has been executed.",
+  "allowed_actions": ["cancel"],
   "transaction": null,
   "simulated": true,
   "safe_to_display": true
 }
 ```
 
-`allowed_actions` names the two planned demo options; neither is executable in
-this stage. It does not grant authorization. The transport is stateless and
-does not persist session references or messages. There are no exported purchase,
-transfer, state-setting, or backend tools, and no `/chat` or
-`/v1/chat/completions` API.
+An idle session returns `mode: "demo"`, `state: "IDLE"` and actions
+`["buy_package", "send_credit"]`. Active sessions return their workflow as
+`mode` and only `["cancel"]`. Actions are descriptive metadata and do not grant
+authorization. MCP transport sessions remain stateless; application sessions
+persist in SQLite. There are no exported purchase, transfer, state-setting,
+or backend tools, and no `/chat` or `/v1/chat/completions` API.
 
 Tool errors have MCP `isError: true` and the same validated response fields,
 with `mode: "error"`, `state: "UNAVAILABLE"`, no actions or transaction, a fixed
@@ -116,10 +124,60 @@ safe reply, and one of these `error_code` values:
 | `SERVER_UNAVAILABLE` | Internal handler failure or invalid output; validated session reference is preserved |
 | `UNKNOWN_TOOL` | Unregistered tool name; `session_ref` is null |
 
-Failure responses do not expose exception details. Output models forbid extra
-fields, bound strings, and constrain this stage to version zero, simulation,
-safe-display flags, and a null transaction. No state or transaction is created
-on valid, invalid, or unauthenticated turns.
+Failure responses do not expose exception details. Their `state_version: 0`
+is an error sentinel, not a saved state reset. Output models forbid extra
+fields, bound strings, require nonnegative integer state versions, and constrain
+simulation, safe-display flags, and a null transaction. Invalid arguments and
+unauthenticated turns do not mutate sessions or audit. No turn runs a transaction
+backend in this stage.
+
+## Routing and persisted state
+
+`configs/global.yaml` contains only the two route groups. Matching applies Unicode
+NFKC normalization, case folding, and whitespace collapsing, then matches exact
+phrases at word boundaries. For example, `BUY   PACKAGE` matches; `buy packages`
+and `rebuy package` do not. Supported phrases include `beli paket`, `buy package`,
+`transfer pulsa`, `kirim pulsa`, `send credit`, and the two workflow identifiers.
+This is keyword matching, not semantic or LLM intent classification.
+
+Routing happens only from `IDLE`:
+
+| Input | Saved state | Reply behavior |
+| --- | --- | --- |
+| `beli paket` / `buy package` | `SELECT_PACKAGE` | Show demo catalog A/B |
+| `transfer pulsa` / `send credit` | `ENTER_MSISDN` | Explain synthetic recipient entry is not available yet |
+| Both intents | `IDLE` | Ask which workflow to do first |
+| Unsupported input | `IDLE` | Show the two-option menu |
+| Exact normalized `cancel` / `batal` | `IDLE` | Clear the active workflow and data; show menu |
+
+Once active, ordinary messages, including route words, are responses to the
+saved entry state. They repeat that state's prompt without advancing or
+switching workflows. Package selection, recipient collection, balances,
+confirmation, execution, and feedback are not implemented in Stage 02.
+Cancellation matches the entire normalized message; `cancel now` is not a reset.
+
+`configs/workflows/*.v1.yaml` defines workflow IDs, version 1, their entry states,
+and the package catalog (`A = Rp 10,000`, `B = Rp 20,000`). All definitions are
+parsed with the safe YAML loader and validated before the database or MCP
+transport is constructed. Python limits transitions to the two entry states
+and cancellation; changing YAML cannot enable later FSM steps or backend calls.
+Unsupported persisted state/workflow versions fail closed.
+
+SQLite contains `sessions`, `transactions`, `processed_messages`, `feedback`,
+and `audit_events`. A session row stores its synthetic ID, active workflow,
+workflow `version`, `state`, `state_version`, empty `data_json`, and UTC
+`updated_at`. New sessions start at revision zero. Starting or cancelling an
+active workflow increments `state_version`; menu and held-state turns keep it.
+Each valid turn saves its session and a minimal audit event atomically, returning
+the saved state and revision. Audit records contain synthetic session references,
+fixed event labels, states, revision, and time, without raw messages, message
+IDs, recipients, or bearer tokens.
+
+The transaction, processed-message, and feedback tables are schema foundations
+only and remain empty during controller turns. Their required unique keys exist,
+but message replay/idempotency handling and concurrent-confirmation hardening
+belong to Stage 05. Session references must be synthetic; they are not customer
+identity or ownership checks.
 
 ## HTTP security policy
 
@@ -154,15 +212,18 @@ are rejected. Unknown paths return 404.
 
 The suite includes the two unchanged Stage 00 tests and tests the real ASGI
 application with the official MCP client, authentication, discovery, strict
-schemas, safe errors, Host/Origin rejection, payload limits, and fixed menu
-behavior. It runs offline and does not require a token in your shell.
+schemas, safe errors, Host/Origin rejection, payload limits, bilingual and
+word-boundary routing, ambiguity, active-state handling, restart persistence,
+cancel, configuration rejection, and atomic state/audit writes. It runs offline,
+uses temporary databases, and does not require a token in your shell.
 The original `configs/example.yaml` remains a Stage 00 offline fixture.
-See [Stage 01 verification](docs/stage_01_verification.md) for observed commands
-and full live smoke output.
+See [Stage 02 verification](docs/stage_02_verification.md) for current commands,
+four routing tests, sample session rows, and scope limits. The historical
+[Stage 01 verification](docs/stage_01_verification.md) records the earlier skeleton.
 
-Stage 01 does not establish workflow success, durable session isolation,
-idempotency, Docker connectivity, or real Hermes integration. Later stages own
-those requirements. CSOL never calls Hermes `/v1/chat/completions` or modifies
+Stage 02 does not establish workflow success, end-customer identity binding,
+message replay safety, Docker connectivity, or real Hermes integration. Later
+stages own those requirements. CSOL never calls Hermes `/v1/chat/completions` or modifies
 Hermes source; later integration adds only a configuration snippet/profile in
 this repository for the deployed Hermes persistent configuration.
 

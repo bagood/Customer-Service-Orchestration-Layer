@@ -1,1 +1,1 @@
-"""Customer Service Orchestration Layer: authenticated MCP demo skeleton."""
+"""Customer Service Orchestration Layer: deterministic MCP routing and SQLite state."""

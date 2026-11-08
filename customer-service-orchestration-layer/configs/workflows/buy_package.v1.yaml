@@ -1,0 +1,9 @@
+workflow: buy_package
+version: 1
+states:
+  - SELECT_PACKAGE
+catalog:
+  A:
+    price_idr: 10000
+  B:
+    price_idr: 20000

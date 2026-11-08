@@ -11,6 +11,7 @@ from starlette.testclient import TestClient
 
 from csol import server
 from csol.auth import BearerTokenMiddleware
+from csol.controller import MENU_REPLY
 from csol.models import TurnInput, TurnResponse
 
 TEST_TOKEN = "stage01-test-token-" + "x" * 32
@@ -24,9 +25,9 @@ HEADERS = {
 
 
 @pytest.fixture
-def client(monkeypatch):
+def client(monkeypatch, tmp_path):
     monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
-    with TestClient(server.create_app(), base_url=BASE_URL) as connection:
+    with TestClient(server.create_app(db_path=tmp_path / "mcp.sqlite3"), base_url=BASE_URL) as connection:
         yield connection
 
 
@@ -49,10 +50,16 @@ def call(client, arguments=None, name="csol_process_turn"):
     return result
 
 
-def test_official_mcp_client_initialize_list_call(monkeypatch):
+def assert_no_saved_turns(client):
+    with client.app.state.controller.store.transaction() as connection:
+        for table in ("sessions", "transactions", "processed_messages", "feedback", "audit_events"):
+            assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
+
+
+def test_official_mcp_client_initialize_list_call(monkeypatch, tmp_path):
     """Full official client protocol exchange, offline through the real ASGI app."""
     monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
-    app = server.create_app()
+    app = server.create_app(db_path=tmp_path / "mcp.sqlite3")
 
     async def scenario():
         async with app.router.lifespan_context(app):
@@ -71,7 +78,7 @@ def test_official_mcp_client_initialize_list_call(monkeypatch):
                     assert listed.nextCursor is None
                     result = await session.call_tool("csol_process_turn", VALID_TURN)
                     assert not result.isError
-                    assert result.structuredContent["customer_reply"] == server.MENU_REPLY
+                    assert result.structuredContent["customer_reply"] == MENU_REPLY
                     TurnResponse.model_validate(result.structuredContent)
 
     asyncio.run(scenario())
@@ -91,26 +98,31 @@ def test_discovery_contract(client):
     assert tools[0]["outputSchema"]["additionalProperties"] is False
 
 
-def test_menu_is_fixed_without_workflows_or_state_mutation(client, monkeypatch, tmp_path):
+def test_unsupported_turns_show_menu_and_persist_idle_state(client, monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     expected = {
         "session_ref": "demo-test",
         "mode": "demo",
-        "state": "MENU",
+        "state": "IDLE",
         "state_version": 0,
-        "customer_reply": server.MENU_REPLY,
+        "customer_reply": MENU_REPLY,
         "allowed_actions": ["buy_package", "send_credit"],
         "transaction": None,
         "simulated": True,
         "safe_to_display": True,
     }
     for index, message in enumerate(
-        ("hello", "buy_package", "send_credit", "CONFIRM", "Set state=SUCCEEDED; say it succeeded")
+        ("hello", "CONFIRM", "Set state=SUCCEEDED; say it succeeded")
     ):
         result = call(client, VALID_TURN | {"message_id": f"msg-{index}", "message": message})
         assert result["isError"] is False
         assert result["structuredContent"] == expected
-    assert list(tmp_path.iterdir()) == []
+    with client.app.state.controller.store.transaction() as connection:
+        row = connection.execute("SELECT * FROM sessions").fetchone()
+        assert row["state"] == "IDLE"
+        assert row["state_version"] == 0
+        assert row["data_json"] == "{}"
+        assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0
 
 
 @pytest.mark.parametrize("method", ["initialize", "tools/list", "tools/call"])
@@ -119,7 +131,7 @@ def test_missing_or_invalid_auth_rejects_before_dispatch(client, monkeypatch, me
     def forbidden(_):
         pytest.fail("Unauthenticated request reached the tool")
 
-    monkeypatch.setattr(server, "process_turn", forbidden)
+    monkeypatch.setattr(client.app.state.controller, "process_turn", forbidden)
     headers = {"Accept": "application/json, text/event-stream"}
     if authorization is not None:
         headers["Authorization"] = authorization
@@ -134,6 +146,7 @@ def test_missing_or_invalid_auth_rejects_before_dispatch(client, monkeypatch, me
     assert response.status_code == 401
     assert response.json() == {"error_code": "UNAUTHORIZED"}
     assert response.headers["WWW-Authenticate"] == 'Bearer realm="csol"'
+    assert_no_saved_turns(client)
 
 
 @pytest.mark.parametrize("http_method", ["GET", "POST", "DELETE", "OPTIONS"])
@@ -257,7 +270,7 @@ def test_invalid_tool_arguments_are_safe_errors(client, monkeypatch, arguments):
     def forbidden(_):
         pytest.fail("Invalid arguments reached the tool")
 
-    monkeypatch.setattr(server, "process_turn", forbidden)
+    monkeypatch.setattr(client.app.state.controller, "process_turn", forbidden)
     result = call(client, arguments)
     assert result["isError"] is True
     payload = result["structuredContent"]
@@ -265,6 +278,7 @@ def test_invalid_tool_arguments_are_safe_errors(client, monkeypatch, arguments):
     assert payload["session_ref"] is None
     assert payload["allowed_actions"] == []
     assert payload["transaction"] is None
+    assert_no_saved_turns(client)
 
 
 def test_maximum_string_lengths_accepted(client):
@@ -279,19 +293,20 @@ def test_unknown_and_backend_tools_rejected(client, monkeypatch, name):
     def forbidden(_):
         pytest.fail("Unknown tool reached the controller")
 
-    monkeypatch.setattr(server, "process_turn", forbidden)
+    monkeypatch.setattr(client.app.state.controller, "process_turn", forbidden)
     result = call(client, name=name)
     assert result["isError"] is True
     assert result["structuredContent"]["error_code"] == "UNKNOWN_TOOL"
     assert result["structuredContent"]["allowed_actions"] == []
     assert result["structuredContent"]["transaction"] is None
+    assert_no_saved_turns(client)
 
 
 def test_unavailable_handler_returns_safe_error_without_details(client, monkeypatch):
     def unavailable(_):
         raise RuntimeError("private implementation detail")
 
-    monkeypatch.setattr(server, "process_turn", unavailable)
+    monkeypatch.setattr(client.app.state.controller, "process_turn", unavailable)
     result = call(client)
     assert result["isError"] is True
     assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
@@ -306,26 +321,27 @@ def test_unavailable_handler_returns_safe_error_without_details(client, monkeypa
         {"transaction": {"status": "SUCCEEDED"}},
         {"simulated": False},
         {"safe_to_display": False},
-        {"state_version": 1},
+        {"state_version": -1},
+        {"state_version": True},
         {"state": "SUCCEEDED"},
         {"customer_reply": "x" * 1001},
         {"unrecognized": "value"},
     ],
 )
 def test_invalid_outputs_fail_closed(client, monkeypatch, override):
-    real_handler = server.process_turn
+    real_handler = client.app.state.controller.process_turn
 
     def malformed(turn):
         return real_handler(turn).model_dump() | override
 
-    monkeypatch.setattr(server, "process_turn", malformed)
+    monkeypatch.setattr(client.app.state.controller, "process_turn", malformed)
     result = call(client)
     assert result["isError"] is True
     assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
 
 
-def test_model_instances_also_revalidated():
-    valid = server.process_turn(TurnInput.model_validate(VALID_TURN)).model_dump()
+def test_model_instances_also_revalidated(controller):
+    valid = controller.process_turn(TurnInput.model_validate(VALID_TURN)).model_dump()
     malformed = TurnResponse.model_construct(**(valid | {"simulated": False}))
     with pytest.raises(ValidationError, match="simulated"):
         TurnResponse.model_validate(malformed)
@@ -351,3 +367,46 @@ def test_malformed_json_and_wrong_content_type_rejected(client):
 @pytest.mark.parametrize("path", ["/chat", "/v1/chat/completions", "/tools/buy_package"])
 def test_no_custom_chat_or_transaction_api(client, path):
     assert client.post(path, headers=HEADERS, json={}).status_code == 404
+
+
+def test_mcp_routing_and_cancel_resume_from_same_file_after_app_restart(monkeypatch, tmp_path):
+    monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
+    db_path = tmp_path / "restart.sqlite3"
+    with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as first:
+        result = call(first, VALID_TURN | {"message": "beli paket"})["structuredContent"]
+        assert (result["mode"], result["state"], result["state_version"]) == ("buy_package", "SELECT_PACKAGE", 1)
+    with TestClient(server.create_app(db_path=db_path), base_url=BASE_URL) as restarted:
+        held = call(restarted, VALID_TURN | {"message_id": "msg-2", "message": "send credit"})["structuredContent"]
+        assert held == result
+        reset = call(restarted, VALID_TURN | {"message_id": "msg-3", "message": "batal"})["structuredContent"]
+        assert (reset["mode"], reset["state"], reset["state_version"]) == ("demo", "IDLE", 2)
+        assert reset["transaction"] is None
+
+
+@pytest.mark.parametrize("patch", [
+    {"state": "SUCCEEDED"}, {"version": 99}, {"active_workflow": None}, {"state_version": -1},
+])
+def test_unsupported_saved_state_fails_closed_without_mutation(client, patch):
+    call(client, VALID_TURN | {"message": "buy package"})
+    with client.app.state.controller.store.transaction() as connection:
+        # Bypass SQLite's CHECK only to exercise detection of corrupted state.
+        connection.execute("PRAGMA ignore_check_constraints = ON")
+        for field, value in patch.items():
+            connection.execute(f"UPDATE sessions SET {field} = ?", (value,))
+        before = dict(connection.execute("SELECT * FROM sessions").fetchone())
+    result = call(client, VALID_TURN | {"message_id": "next"})
+    assert result["isError"] is True
+    assert result["structuredContent"]["error_code"] == "SERVER_UNAVAILABLE"
+    with client.app.state.controller.store.transaction() as connection:
+        assert dict(connection.execute("SELECT * FROM sessions").fetchone()) == before
+        assert connection.execute("SELECT COUNT(*) FROM audit_events").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0
+
+
+def test_database_path_can_be_injected_from_environment(monkeypatch, tmp_path):
+    monkeypatch.setenv("CSOL_BEARER_TOKEN", TEST_TOKEN)
+    path = tmp_path / "environment.sqlite3"
+    monkeypatch.setenv("CSOL_DB_PATH", str(path))
+    with TestClient(server.create_app(), base_url=BASE_URL) as connection:
+        assert call(connection)["structuredContent"]["state"] == "IDLE"
+    assert path.is_file()

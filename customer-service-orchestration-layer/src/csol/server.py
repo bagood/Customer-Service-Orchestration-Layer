@@ -1,8 +1,10 @@
-"""Authenticated, stateless MCP Streamable HTTP skeleton; no workflows yet."""
+"""Authenticated MCP Streamable HTTP transport with SQLite-backed routing."""
 
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import uvicorn
 from mcp.server.lowlevel import Server
@@ -14,31 +16,13 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 
 from csol.auth import BearerTokenMiddleware, load_bearer_token
+from csol.config import DEFAULT_CONFIG_DIR, load_configuration
+from csol.controller import Controller
 from csol.models import ErrorCode, TurnInput, TurnResponse
+from csol.store import DEFAULT_DB_PATH, Store
 
 LOGGER = logging.getLogger(__name__)
-MENU_REPLY = (
-    "Telecom demo menu (simulation only):\n"
-    "1. Buy a package (buy_package)\n"
-    "2. Send credit (send_credit)\n"
-    "Workflows are not available yet. No transaction has been executed."
-)
 MAX_REQUEST_BODY_SIZE = 16 * 1024
-
-
-def process_turn(turn: TurnInput) -> TurnResponse:
-    """Every valid turn returns the same menu without changing any state."""
-    return TurnResponse(
-        session_ref=turn.session_ref,
-        mode="demo",
-        state="MENU",
-        state_version=0,
-        customer_reply=MENU_REPLY,
-        allowed_actions=["buy_package", "send_credit"],
-        transaction=None,
-        simulated=True,
-        safe_to_display=True,
-    )
 
 
 def error_response(code: ErrorCode, session_ref: str | None = None) -> TurnResponse:
@@ -72,10 +56,15 @@ def tool_result(response: TurnResponse) -> CallToolResult:
     )
 
 
-def create_app() -> Starlette:
+def create_app(*, db_path: Path | None = None, config_dir: Path = DEFAULT_CONFIG_DIR) -> Starlette:
     # No insecure default: fail before constructing the transport if misconfigured.
     token = load_bearer_token()
-    server = Server("csol", version="0.1.0")
+    config = load_configuration(config_dir)
+    store = Store(
+        db_path if db_path is not None else Path(os.environ.get("CSOL_DB_PATH", DEFAULT_DB_PATH))
+    )
+    controller = Controller(store, config)
+    server = Server("csol", version="0.2.0")
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
@@ -83,8 +72,9 @@ def create_app() -> Starlette:
             Tool(
                 name="csol_process_turn",
                 description=(
-                    "Process a synthetic telecom demo turn. Currently returns only a fixed "
-                    "menu; no workflows or transactions run. Session references do not "
+                    "Process a synthetic telecom demo turn with deterministic routing and "
+                    "persistent state. Workflow steps and transactions are not available yet. "
+                    "Session references do not "
                     "authenticate customers. Returned actions do not grant authorization."
                 ),
                 inputSchema=TurnInput.model_json_schema(),
@@ -106,7 +96,7 @@ def create_app() -> Starlette:
         except ValidationError:
             return tool_result(error_response("INVALID_ARGUMENTS"))
         try:
-            response = TurnResponse.model_validate(process_turn(turn))
+            response = TurnResponse.model_validate(controller.process_turn(turn))
             return tool_result(response)
         except Exception:
             # Do not disclose or log model/customer input or internal exception text.
@@ -135,10 +125,12 @@ def create_app() -> Starlette:
         async with manager.run():
             yield
 
-    return Starlette(
+    app = Starlette(
         routes=[Route("/mcp", endpoint=BearerTokenMiddleware(manager.handle_request, token))],
         lifespan=lifespan,
     )
+    app.state.controller = controller
+    return app
 
 
 def main() -> None:

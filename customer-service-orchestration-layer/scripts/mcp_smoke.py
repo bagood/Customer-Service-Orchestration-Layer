@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import uuid
 
 import httpx
 from mcp import ClientSession
@@ -13,6 +14,8 @@ from csol.models import TurnResponse
 
 
 async def smoke(url: str, token: str) -> None:
+    # A fresh synthetic reference keeps repeat smoke runs independent of saved workflows.
+    session_ref = f"demo-smoke-{uuid.uuid4().hex}"
     async with (
         httpx.AsyncClient(headers={"Authorization": f"Bearer {token}"}, timeout=10) as http,
         streamable_http_client(url, http_client=http) as (read, write, _),
@@ -27,14 +30,15 @@ async def smoke(url: str, token: str) -> None:
             print(f"tools/list: OK ({', '.join(names)})")
             result = await session.call_tool(
                 "csol_process_turn",
-                {"session_ref": "demo-smoke", "message_id": "smoke-001", "message": "hello"},
+                {"session_ref": session_ref, "message_id": "smoke-001", "message": "hello"},
             )
             response = TurnResponse.model_validate(result.structuredContent)
             if (
                 result.isError
-                or response.session_ref != "demo-smoke"
+                or response.session_ref != session_ref
                 or response.mode != "demo"
-                or response.state != "MENU"
+                or response.state != "IDLE"
+                or response.state_version != 0
                 or response.allowed_actions != ["buy_package", "send_credit"]
                 or response.error_code is not None
             ):

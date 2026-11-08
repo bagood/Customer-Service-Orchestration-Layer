@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "customer-service-orchestration-layer"
 version = "0.0.0"
-description = "Authenticated MCP skeleton for the CSOL telecom simulation"
+description = "Authenticated MCP routing and persistent state for the CSOL telecom simulation"
 readme = "README.md"
 requires-python = ">=3.11"
 dynamic = ["dependencies"]
