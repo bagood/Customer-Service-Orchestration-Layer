@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "customer-service-orchestration-layer"
 version = "0.0.0"
-description = "Offline repository foundation for the CSOL MCP MVP"
+description = "Authenticated MCP skeleton for the CSOL telecom simulation"
 readme = "README.md"
 requires-python = ">=3.11"
 dynamic = ["dependencies"]
