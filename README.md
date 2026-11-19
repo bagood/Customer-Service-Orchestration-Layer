@@ -1,8 +1,9 @@
 # Python + FastAPI MCP template
 
 A small, runnable Model Context Protocol server using the official Python MCP SDK
-and FastAPI. It provides Streamable HTTP at `/mcp`, typed example tools, a resource,
-a reusable prompt, a health endpoint, and tests through a real MCP client.
+and FastAPI. It provides Streamable HTTP at `/mcp`, Markdown server instructions,
+a health endpoint, and tests through a real MCP client. No tools, resources, or
+prompts are currently registered.
 
 This is a reusable starter. The existing CSOL design documents remain reference
 material; their workflows, persistence, and Hermes integration are not implemented here.
@@ -35,7 +36,7 @@ uvicorn app.main:create_app --factory --reload --host 127.0.0.1 --port 8000
 
 MCP tools use the MCP protocol and are discovered by an MCP client. They are not
 individual REST endpoints and do not appear in Swagger UI. No model API key is
-needed to start the server or call the examples.
+needed to start the server or run the example client.
 
 ## Try the MCP client
 
@@ -45,9 +46,9 @@ With the server running, open another terminal:
 uv run python examples/client.py
 ```
 
-The example discovers tools, calls `add` with `2` and `3` (returning `{"total":5}`),
-reads the resource, and retrieves the prompt. Pass a different endpoint as its first
-argument if needed.
+The example connects to the MCP server and lists its registered tools. Currently,
+it reports an empty tool list. Pass a different endpoint as its first argument
+if needed.
 
 For an interactive client:
 
@@ -58,27 +59,13 @@ npx @modelcontextprotocol/inspector
 Select **Streamable HTTP**, enter `http://127.0.0.1:8000/mcp`, and connect.
 For other MCP hosts, select their HTTP transport and use the same URL.
 
-| Capability | Name | Example input |
-| --- | --- | --- |
-| Tool | `add` | `{"a":2,"b":3}` |
-| Tool | `greet` | `{"name":"Ada"}` |
-| Resource | `template://info` | Read the URI |
-| Prompt | `summarize` | `{"text":"Text to summarize"}` |
-
-The prompt returns instructions for the client's model; the server does not
-generate a summary itself. Tool type hints and Pydantic models define the input
-and output schemas. Invalid tool input produces an MCP tool error.
-
 ## Project layout
 
 ```text
 app/
   main.py         # FastAPI factory, routes, mount, and MCP lifespan
   config.py       # MCP_* environment settings
-  mcp_server.py   # MCP server construction and capability registration
-  tools.py        # Typed tool examples
-  resources.py    # Read-only resource example
-  prompts.py      # Reusable prompt example
+  mcp_server.py   # MCP server construction and instructions
 examples/
   client.py       # Official SDK HTTP client
 instructions/
@@ -87,12 +74,12 @@ utils/
   instructions.py # Reusable Markdown instruction loader
 tests/
   conftest.py     # Live HTTP server fixture on an ephemeral port
-  test_server.py  # Discovery, calls, validation, resource/prompt, HTTP checks
+  test_server.py  # Empty discovery, unknown tool rejection, and HTTP checks
 ```
 
-Add tools in `app/tools.py` with `@server.tool()` inside `register_tools`. Keep
-business logic in separate service modules as your application grows. Add resources
-and prompts in their corresponding registration functions.
+Register future customer-service capabilities on the server returned by
+`create_mcp_server` before constructing its HTTP application. Keep business logic
+in separate service modules as your application grows.
 
 Edit `instructions/mcp_server.md` to change the instructions sent to MCP clients.
 `utils.instructions.load_instructions()` loads the default file; pass a path to
@@ -136,9 +123,9 @@ uv run ruff format --check .
 ```
 
 Tests start the actual FastAPI app on a loopback port and use the official SDK
-client. They cover automatic and legacy client negotiation, discovery, structured
-tool results, invalid arguments, unknown tools, resources, prompts, transport
-Host/Origin rejection, and FastAPI routes.
+client. They cover automatic and legacy client negotiation, empty capability
+discovery, unknown tool rejection, transport Host/Origin rejection, and FastAPI
+routes.
 
 ## Deploy with Docker Compose
 

@@ -11,16 +11,8 @@ async def main(url: str) -> None:
         tools = await client.list_tools()
         print("Tools:", [tool.name for tool in tools.tools])
 
-        result = await client.call_tool("add", {"a": 2, "b": 3})
-        if result.is_error:
-            raise RuntimeError(result.content)
-        print("Addition:", result.structured_content)
-
-        resource = await client.read_resource("template://info")
-        print("Resource:", resource.contents)
-
-        prompt = await client.get_prompt("summarize", {"text": "MCP connects AI apps to tools."})
-        print("Prompt:", prompt.messages)
+        if not tools.tools:
+            print("Connected successfully. No tools are registered yet.")
 
 
 if __name__ == "__main__":
