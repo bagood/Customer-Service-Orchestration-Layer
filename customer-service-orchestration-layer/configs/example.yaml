@@ -1,5 +1,0 @@
-# Offline sample only; no endpoints, credentials, or workflow definitions.
-project:
-  name: csol
-  stage: 0
-  mode: offline
