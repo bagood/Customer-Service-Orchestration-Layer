@@ -7,13 +7,20 @@ from app.config import Settings
 from app.prompts import register_prompts
 from app.resources import register_resources
 from app.tools import register_tools
+from utils.instructions import load_instructions
 
 
 def create_mcp_server(settings: Settings) -> MCPServer:
     server = MCPServer(
-        settings.server_name,
+        name="customer-service-orchestration-layer",
         version=__version__,
-        instructions="Example server with add/greet tools, template info, and a summarize prompt.",
+        description=(
+            "Customer Service Orchestration Layer (CSOL). "
+            "Manages supported customer-service workflows, validates "
+            "requests, enforces business policies, and returns approved "
+            "outcomes and customer-facing responses."
+        ),
+        instructions=load_instructions(),
     )
     register_tools(server)
     register_resources(server)

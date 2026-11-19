@@ -6,6 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY app ./app
+COPY utils ./utils
+COPY instructions ./instructions
 RUN pip install --no-cache-dir . && useradd --create-home appuser
 
 USER appuser

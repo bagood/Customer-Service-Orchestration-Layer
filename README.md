@@ -81,6 +81,10 @@ app/
   prompts.py      # Reusable prompt example
 examples/
   client.py       # Official SDK HTTP client
+instructions/
+  mcp_server.md   # Server instructions loaded at startup
+utils/
+  instructions.py # Reusable Markdown instruction loader
 tests/
   conftest.py     # Live HTTP server fixture on an ephemeral port
   test_server.py  # Discovery, calls, validation, resource/prompt, HTTP checks
@@ -89,6 +93,14 @@ tests/
 Add tools in `app/tools.py` with `@server.tool()` inside `register_tools`. Keep
 business logic in separate service modules as your application grows. Add resources
 and prompts in their corresponding registration functions.
+
+Edit `instructions/mcp_server.md` to change the instructions sent to MCP clients.
+`utils.instructions.load_instructions()` loads the default file; pass a path to
+load another instruction file. Missing or empty files fail startup explicitly.
+The server loads this file at startup, so restart the server after editing it
+(or rebuild with `docker compose up --build --wait`). The file is included in
+Docker images and installed Python packages. It documents the intended CSOL
+workflow contract while identifying which capabilities are currently implemented.
 
 FastAPI owns the MCP session manager's lifespan because mounted applications do
 not start their own lifespan automatically. The root mount is deliberately last,
