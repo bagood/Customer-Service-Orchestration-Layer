@@ -1,0 +1,6 @@
+simulation: landing
+routing: path
+mocks:
+  - name: intent-provider
+    routeKey: llm
+    path: postman/mocks/intent-provider/config.yaml

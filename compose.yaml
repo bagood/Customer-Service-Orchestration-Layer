@@ -11,6 +11,11 @@ services:
       MCP_SERVER_NAME: "${MCP_SERVER_NAME:-Python MCP Template}"
       MCP_ALLOWED_HOSTS: '${MCP_ALLOWED_HOSTS:-["127.0.0.1:*","localhost:*","[::1]:*","mcp:8000"]}'
       MCP_ALLOWED_ORIGINS: '${MCP_ALLOWED_ORIGINS:-["http://127.0.0.1:*","http://localhost:*","http://[::1]:*"]}'
+      MCP_LLM_BASE_URL: "${MCP_LLM_BASE_URL:-}"
+      MCP_LLM_MODEL: "${MCP_LLM_MODEL:-}"
+      MCP_LLM_API_KEY: "${MCP_LLM_API_KEY:-}"
+      MCP_LLM_TIMEOUT_SECONDS: "${MCP_LLM_TIMEOUT_SECONDS:-20}"
+      MCP_LLM_RESPONSE_FORMAT: "${MCP_LLM_RESPONSE_FORMAT:-json_object}"
     # Reuse the Dockerfile's health check command, with a shorter startup check interval.
     healthcheck:
       interval: 10s

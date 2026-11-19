@@ -1,0 +1,11 @@
+# MCP tools exposed by the landing workflow. Schemas come from Python type hints.
+workflow: landing
+tools:
+  - name: classify_intent
+    description: >-
+      Classify a customer's original message as buy_package or send_credit using
+      the configured external model, then update the session's landing state.
+      Use for new landing sessions and clarification replies. Supply a stable
+      session_ref and a unique message_id; retries must reuse both identifiers
+      and the unchanged message. Ambiguous or unsupported requests require
+      clarification. This tool never purchases a package or transfers credit.

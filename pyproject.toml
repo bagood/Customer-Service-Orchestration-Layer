@@ -10,23 +10,21 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115,<1",
+    "httpx>=0.28,<1",
     "mcp>=2.3,<3",
     "pydantic-settings>=2.6,<3",
+    "pyyaml>=6,<7",
     "uvicorn[standard]>=0.30,<1",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28,<1",
     "pytest>=8,<10",
     "ruff>=0.9,<1",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["app", "utils"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"instructions/mcp_server.md" = "app/instructions/mcp_server.md"
+packages = ["app", "utils", "workflow-config", "workflow-tools"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

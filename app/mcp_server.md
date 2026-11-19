@@ -6,11 +6,15 @@ and action execution.
 
 ## Available capabilities
 
-Use only tools advertised by the connected server. The current server has no
-registered tools, resources, or prompts.
-Customer-service workflows and `csol_process_turn` are not implemented yet.
-Do not claim that these capabilities exist or that a customer operation has been
-performed when the connected server does not support it.
+Use only tools advertised by the connected server. The landing workflow exposes
+`classify_intent`, which calls an external decision model and records either
+`buy_package` or `send_credit` in the session's landing state. Ambiguous or
+unsupported requests require clarification. No resources or prompts are registered.
+
+Purchases, credit transfers, destination workflows, and `csol_process_turn` are not
+implemented yet. Classification is not execution or authorization. Do not claim
+that a customer operation was performed. Follow the appended landing instructions
+for the currently available tool.
 
 ## Customer-service workflow contract
 

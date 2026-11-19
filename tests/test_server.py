@@ -16,14 +16,24 @@ def test_fastapi_routes(server_url: str) -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("mode", ["auto", "legacy"])
-async def test_empty_capability_discovery(server_url: str, mode: str) -> None:
+async def test_landing_capability_discovery(server_url: str, mode: str) -> None:
     async with Client(f"{server_url}/mcp", mode=mode) as client:
         tools = await client.list_tools()
-        assert tools.tools == []
+        assert [tool.name for tool in tools.tools] == ["classify_intent"]
+        assert tools.tools[0].input_schema["required"] == ["session_ref", "message_id", "message"]
         resources = await client.list_resources()
         assert resources.resources == []
         prompts = await client.list_prompts()
         assert prompts.prompts == []
+
+
+@pytest.mark.anyio
+async def test_invalid_landing_input(server_url: str) -> None:
+    async with Client(f"{server_url}/mcp") as client:
+        result = await client.call_tool(
+            "classify_intent", {"session_ref": "s1", "message_id": "m1", "message": "   "}
+        )
+        assert result.is_error
 
 
 @pytest.mark.anyio

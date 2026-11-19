@@ -7,7 +7,8 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY app ./app
 COPY utils ./utils
-COPY instructions ./instructions
+COPY workflow-config ./workflow-config
+COPY workflow-tools ./workflow-tools
 RUN pip install --no-cache-dir . && useradd --create-home appuser
 
 USER appuser

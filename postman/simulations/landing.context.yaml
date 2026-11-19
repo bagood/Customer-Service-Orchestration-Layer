@@ -1,0 +1,89 @@
+purpose:
+  stands_in_for: >-
+    A configurable OpenAI-compatible Chat Completions intent provider. This is a
+    contract-shaped fixture implementation, not a real decision model.
+  unblocks: >-
+    Local verification of the landing controller's provider serialization,
+    validation, retries, context handling, and failure behavior without real
+    customer data, API credentials, or paid model requests.
+assumptions:
+  - id: chat-completions-subset
+    status: unknown
+    claim: >-
+      The selected provider accepts the adapter's Chat Completions request shape,
+      JSON output format, and optional bearer authentication, and returns content
+      and finish_reason in the expected completion envelope.
+    reason: >-
+      The adapter and local mock model the documented OpenAI-compatible subset,
+      but no particular live provider or model was selected or tested. Published
+      owner-mock discovery was skipped because the Postman CLI is signed out.
+    verification: >-
+      On 2026-11-19, both json_object and json_schema scenarios passed against
+      the local Postman simulation. This verifies caller behavior against the
+      fixtures, not compatibility with every OpenAI-compatible provider.
+    source: >-
+      https://developers.openai.com/api/reference/resources/chat;
+      workflow-tools/landing/helper/decision_model.py;
+      postman/mocks/intent-provider/default.js;
+      tests/test_landing_simulation.py
+    updated_at: "2026-11-19"
+  - id: invalid-provider-results-do-not-update-state
+    status: supported
+    claim: >-
+      In the exercised provider-failure scenarios, classification fails without
+      advancing state, and the same message identifier remains available for a
+      later successful retry.
+    reason: >-
+      Real HTTP requests exercised invalid enums, extra fields, inconsistent
+      decisions, non-JSON content, refusal, truncation, malformed envelopes,
+      HTTP 429/500, and a response delayed beyond the caller's timeout. State
+      remained at version zero; replacing the fixture with a valid response
+      allowed the unchanged request to advance exactly once.
+    verification: >-
+      On 2026-11-19, ran tests/test_landing_simulation.py against
+      landing.sim.yaml. Read request events for /v1/chat/completions in the
+      simulation's NDJSON output, including HTTP 429/500 and a 502ms delayed
+      completion that exceeded the caller's 100ms timeout. All scenarios passed.
+    source: >-
+      tests/test_landing_simulation.py::test_provider_failures_do_not_mutate_state;
+      workflow-tools/landing/intent_classifier.py;
+      postman/mocks/intent-provider/default.js
+    updated_at: "2026-11-19"
+  - id: classification-semantics
+    status: unknown
+    claim: >-
+      The selected live model correctly interprets English/Indonesian requests,
+      distinguishes the supported intents, and ignores misleading instructions
+      within customer messages.
+    reason: >-
+      The mock returns fixed decisions for synthetic requests. Typed validation
+      constrains output structure and permitted intent values; it cannot prove
+      that a valid-looking decision correctly represents customer intent.
+    verification: >-
+      No live model accuracy or adversarial-language evaluation was performed.
+      Evaluate the configured provider/model using labeled examples before
+      treating its classification as reliable for real workflows.
+    source: workflow-tools/landing/instructions/intent_classification.md
+    updated_at: "2026-11-19"
+  - id: container-provider-wiring
+    status: supported
+    claim: >-
+      The built Docker image loads the workflow packages and accepts an MCP
+      classification request that calls the local simulated provider over HTTP.
+    reason: >-
+      An isolated Compose deployment started healthy as appuser, discovered the
+      landing tool, called the provider through host.docker.internal, classified
+      buy_package, and returned the same versioned result for an identical retry.
+      The test deployment was stopped and removed afterward.
+    verification: >-
+      On 2026-11-19, built csol-landing:check and ran it with the committed Compose
+      configuration plus a temporary image override. The host SDK client called
+      /mcp, received handoff_pending with intent buy_package, and replayed the same
+      message identifier. The provider simulation logged /v1/chat/completions.
+    source: Dockerfile; compose.yaml; postman/simulations/landing.sim.yaml
+    updated_at: "2026-11-19"
+fingerprints:
+  - id: landing-initial-implementation
+    date: "2026-11-19"
+    commit: dc01889 (dirty working tree, including landing implementation)
+    cli: Postman CLI 1.75.0
