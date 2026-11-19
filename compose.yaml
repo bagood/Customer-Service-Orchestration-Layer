@@ -1,0 +1,19 @@
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MCP_PORT:-8000}:8000"
+    environment:
+      MCP_SERVER_NAME: "${MCP_SERVER_NAME:-Python MCP Template}"
+      MCP_ALLOWED_HOSTS: '${MCP_ALLOWED_HOSTS:-["127.0.0.1:*","localhost:*","[::1]:*","mcp:8000"]}'
+      MCP_ALLOWED_ORIGINS: '${MCP_ALLOWED_ORIGINS:-["http://127.0.0.1:*","http://localhost:*","http://[::1]:*"]}'
+    # Reuse the Dockerfile's health check command, with a shorter startup check interval.
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
