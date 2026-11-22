@@ -12,6 +12,8 @@ The goal is to prove that Hermes can follow a customer service procedure when CS
 
 Redis and PostgreSQL are already deployed as separate services. This repository consumes both through configured client connections. Deployment and administration of each database belong to its service owner.
 
+Store both connection URLs in a single `.env` file beside `compose.yaml` at the repository root. Set `REDIS_URL` to the Redis endpoint and `DATABASE_URL` to the PostgreSQL endpoint. Use hostnames reachable from the CSOL container. Add `.env` to `.gitignore` and `.dockerignore` to keep deployment credentials local.
+
 | Service | Data it owns | How CSOL uses it |
 | --- | --- | --- |
 | Redis | Each conversation's FSM state, step, revision, and temporary workflow context | `app/` reads the current state and step to select the tools for Hermes. It persists transitions so the next call resumes at the correct step. |
@@ -39,6 +41,7 @@ For every action, CSOL returns the committed state and step, a revision, the out
 ## Directory architecture
 
 ```text
+├── .env
 ├── Dockerfile
 ├── compose.yaml
 ├── pyproject.toml
@@ -109,7 +112,7 @@ For example, when Redis holds `buy_package / user_confirmation`, Hermes receives
 
 - **Application entry point.** Define the FastAPI application in `app/main.py`. Mount the MCP Python SDK's Streamable HTTP application so Hermes reaches it at exactly `/mcp`. Use FastAPI's lifespan to start the MCP session manager and open the Redis and PostgreSQL clients, then close them on shutdown. [MCP Python SDK guide to mounting an HTTP server](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/run/asgi.md)
 - **Container image.** Declare the Python dependencies in `pyproject.toml` and pin them for the build. The root `Dockerfile` installs those dependencies, copies the Python modules and Markdown instructions, and starts Uvicorn with `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
-- **Compose configuration.** Define one service named `csol` in `compose.yaml`. Supply `REDIS_URL` and `DATABASE_URL` at runtime using addresses reachable from inside the container. For Hermes running on the Docker host, publish port 8000 on loopback and configure `http://127.0.0.1:8000/mcp`. For Hermes on a shared Docker network, use `http://csol:8000/mcp`.
+- **Compose configuration.** Define one service named `csol` in `compose.yaml`. Set `env_file: ./.env` on that service so Compose passes both URLs into the container at runtime. FastAPI reads them from the process environment when it opens the database clients. For Hermes running on the Docker host, publish port 8000 on loopback and configure `http://127.0.0.1:8000/mcp`. For Hermes on a shared Docker network, use `http://csol:8000/mcp`.
 - **Deployment check.** With both connection URLs supplied, run `docker compose config --quiet` and `docker compose up --build -d`. Connect an MCP client to the same URL Hermes will use, request the current step's instruction, and verify the returned tool result. After recording a name, recreate the application container and verify the same conversation resumes at `landing / intent_classification`.
 
 ## Workflow and transition table

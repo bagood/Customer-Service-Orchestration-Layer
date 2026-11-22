@@ -1,0 +1,1 @@
+Present the quoted package, benefits, quota, and price. Ask whether the customer wants to buy this offer. Require a fresh answer after a top-up. A previous purchase confirmation or an answer to a different question cannot authorize this purchase.

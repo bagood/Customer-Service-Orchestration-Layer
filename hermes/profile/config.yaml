@@ -1,0 +1,11 @@
+# Customer service CLI profile for Hermes v2026.9.24.
+platform_toolsets:
+  cli: [mcp-csol]
+plugins:
+  enabled: [csol_scope]
+tools:
+  tool_search:
+    enabled: "off"
+mcp_servers:
+  csol:
+    url: "${CSOL_URL}/mcp"

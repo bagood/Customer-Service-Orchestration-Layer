@@ -1,0 +1,1 @@
+Ask what the customer wants in a package. Use any stated benefit, minimum quota in GB, or maximum price in whole credits to find a matching offer. If no offer matches, ask which preference they would change.
