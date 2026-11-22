@@ -1,28 +1,29 @@
 import pytest
-from app.engine import STEPS
-from app.model import MENU
+from app.registry import WorkflowAccess
+from conftest import CONFIRM, LEGACY_TOOLS, MENU
 
 
-@pytest.mark.parametrize("pair", STEPS)
+@pytest.mark.parametrize("pair", LEGACY_TOOLS)
 @pytest.mark.parametrize("answer", ["yes", "no"])
 async def test_return_at_every_step(engine, enter, call, pair, answer):
     await enter(pair, display_name="Ari")
     before = await engine.conversations.read("chat", "wallet")
     assert (await call("resolve_return_to_landing", answer="yes"))["outcome"] == "no_pending_return"
     pending = await call("request_return_to_landing")
-    assert pending["allowed_tools"] == [*STEPS[pair].names, "request_return_to_landing", "resolve_return_to_landing"]
+    assert pending["allowed_tools"] == [*LEGACY_TOOLS[pair], "request_return_to_landing", "resolve_return_to_landing"]
     assert "leave" in pending["instruction"]["question"]
     assert (await call("resolve_return_to_landing", 0, answer="yes"))["outcome"] == "stale_revision"
     result = await call("resolve_return_to_landing", 1, answer=answer)
     expected = MENU if answer == "yes" else pair
     assert (result["state"], result["step"]) == expected
     after = await engine.conversations.read("chat", "wallet")
-    assert after.offer == (None if answer == "yes" else before.offer)
-    assert after.display_name == "Ari" and after.return_question is None
+    before_offer = WorkflowAccess(engine.registry, before, "buy_package").context()["offer"]
+    after_offer = WorkflowAccess(engine.registry, after, "buy_package").context()["offer"]
+    assert after_offer == (None if answer == "yes" else before_offer)
+    assert result["instruction"]["context"]["display_name"] == "Ari" and after.return_question is None
 
 
 async def test_return_answer_cannot_purchase(engine, enter, call):
-    from app.model import CONFIRM
     await enter(CONFIRM)
     await call("request_return_to_landing")
     premature = await call("resolve_return_to_landing", 1, turn="turn-0", answer="yes")

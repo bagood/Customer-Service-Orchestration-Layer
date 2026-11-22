@@ -1,5 +1,5 @@
 import pytest
-from app.model import CONFIRM
+from conftest import CONFIRM
 
 
 @pytest.mark.parametrize("posted,step", [

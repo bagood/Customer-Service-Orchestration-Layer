@@ -7,6 +7,7 @@ from copy import deepcopy
 
 import httpx
 import jwt
+from tools.mcp_tool_schema import mcp_prefixed_tool_name
 
 PREFIX = "mcp__csol__"
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ def scope(session_id, turn_id):
     result = httpx.get(os.environ["CSOL_URL"].rstrip("/") + "/scope",
                        headers={"Authorization": "Bearer " + binding(session_id, turn_id)}, timeout=5)
     result.raise_for_status()
-    return [PREFIX + name for name in result.json()["allowed_tools"]]
+    return [mcp_prefixed_tool_name("csol", name) for name in result.json()["allowed_tools"]]
 
 
 def scoped_error(message):

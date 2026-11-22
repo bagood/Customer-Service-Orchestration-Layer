@@ -1,5 +1,5 @@
 import pytest
-from app.model import MENU, PREFERENCES, CREDITS
+from conftest import MENU, PREFERENCES, CREDITS
 
 
 @pytest.mark.parametrize("service,destination", [("buy_package", PREFERENCES), ("buy_credits", CREDITS), ("unclear", MENU)])

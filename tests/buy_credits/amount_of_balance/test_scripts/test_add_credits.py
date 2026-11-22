@@ -1,5 +1,5 @@
 import pytest
-from app.model import CREDITS
+from conftest import CREDITS
 from conftest import OFFER
 
 

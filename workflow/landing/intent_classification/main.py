@@ -1,21 +1,21 @@
 from typing import Literal
 
-from app.model import Action, CREDITS, PREFERENCES, Step, wording
+from app.model import Action, Step
 
 
 class Selection(Action):
     service: Literal["buy_package", "buy_credits", "unclear"]
 
 
-def menu_instruction(conversation):
-    return wording(__file__)
+def menu_instruction(workflow):
+    return workflow.instruction_text
 
 
-async def select_service(conversation, args, db, turn):
+async def select_service(conversation, args, db, turn, workflow):
     """Select the service requested in the customer's message."""
     if args.service == "unclear":
         return {"outcome": "clarify_service"}
-    conversation.move(PREFERENCES if args.service == "buy_package" else CREDITS)
+    workflow.move("preferences" if args.service == "buy_package" else "top_up")
     return {"outcome": "service_selected"}
 
 

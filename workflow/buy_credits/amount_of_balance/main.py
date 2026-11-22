@@ -1,22 +1,26 @@
-from app.model import Action, CONFIRM, CreditAmount, MENU, Step, wording
+from app.model import Action, CreditAmount, Step
+from workflow.buy_credits.helper import top_up
 
 
 class TopUp(Action):
     amount: CreditAmount
 
 
-def credit_instruction(conversation):
-    return wording(__file__)
+def credit_instruction(workflow):
+    return workflow.instruction_text
 
 
-async def add_credits(conversation, args, db, turn):
+async def add_credits(conversation, args, db, turn, workflow):
     """Post the customer's requested positive whole-credit amount."""
-    result = await db.post(conversation, "top_up", amount=args.amount)
+    result = await top_up(db, conversation, args.amount)
     if result["outcome"] == "credited":
-        conversation.shortfall = None
-        if conversation.offer:
-            conversation.offer_presented_turn = turn
-        conversation.move(CONFIRM if conversation.offer else MENU)
+        package = workflow.context("buy_package")
+        package["shortfall"] = None
+        if package["offer"]:
+            package["offer_presented_turn"] = turn
+            workflow.move("confirm")
+        else:
+            workflow.move("menu")
     return result
 
 

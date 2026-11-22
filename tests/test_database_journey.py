@@ -1,5 +1,6 @@
 """Set both CSOL_TEST URLs to run against dedicated databases with the fixture schema."""
 import asyncio
+import json
 import os
 from uuid import uuid4
 
@@ -9,12 +10,12 @@ from redis.asyncio import Redis
 
 from app.database import Accounts
 from app.engine import Engine
-from app.model import CONFIRM, CREDITS, MENU
+from conftest import CONFIRM, CREDITS, MENU
 from app.store import Conversations
 
 
 @pytest.fixture
-async def live():
+async def live(registry):
     pg_url = os.getenv("CSOL_TEST_DATABASE_URL")
     redis_url = os.getenv("CSOL_TEST_REDIS_URL")
     if not (pg_url and redis_url):
@@ -24,7 +25,7 @@ async def live():
         await pool.execute("INSERT INTO csol.customers(customer_id,balance) VALUES ($1,20)", customer)
         try:
             await pool.execute("INSERT INTO csol.packages VALUES ($1,'Demo',$1,5,50)", customer)
-            yield Engine(Conversations(redis), Accounts(pool)), customer, pool
+            yield Engine(Conversations(redis, registry, "versioned"), Accounts(pool), registry), customer, pool
         finally:
             async with pool.acquire() as conn, conn.transaction():
                 await conn.execute("DELETE FROM csol.operations WHERE customer_id=$1", customer)
@@ -35,6 +36,8 @@ async def live():
 
 async def test_purchase_detour_and_commit_recovery(live, monkeypatch):
     engine, customer, pool = live
+    redis, registry = engine.conversations.redis, engine.registry
+    engine = Engine(Conversations(redis, registry), engine.accounts, registry)
 
     async def act(tool, rev, **args):
         return await engine.invoke(customer, customer, tool, {"revision": rev, **args}, turn=str(rev))
@@ -58,10 +61,17 @@ async def test_purchase_detour_and_commit_recovery(live, monkeypatch):
         patch.setattr(engine.conversations, "replace", lose_redis_after_commit)
         with pytest.raises(ConnectionError):
             await act("add_credits", 7, amount=30)
+    key = f"csol:conversation:{customer}"
+    reserved = json.loads(await redis.get(key))
+    assert "version" not in reserved and reserved["in_flight"]["tool"] == "add_credits"
+
+    engine = Engine(Conversations(redis, registry, "versioned"), engine.accounts, registry)
     assert await pool.fetchval("SELECT balance FROM csol.customers WHERE customer_id=$1", customer) == 50
     assert (await act("add_credits", 7, amount=40))["outcome"] == "operation_pending"
     result = await act("add_credits", 7, amount=30)
     assert result["receipt"]["balance"] == 50 and result["step"] == CONFIRM[1]
+    assert result["receipt"]["operation_id"] == f"{reserved['instance']}.7"
+    assert json.loads(await redis.get(key))["version"] == 1
     assert (await act("add_credits", 7, amount=30))["outcome"] == "out_of_step"
     too_early = await engine.invoke(customer, customer, "confirm_package", {"revision": 8, "answer": "yes"}, turn="7")
     assert too_early["outcome"] == "await_fresh_confirmation"

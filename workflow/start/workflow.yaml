@@ -1,0 +1,8 @@
+version: 1
+start_at: identification
+context:
+  display_name: {type: string, nullable: true, default: null}
+steps:
+  identification: {directory: identification}
+destinations:
+  menu: {workflow: landing, step: menu}

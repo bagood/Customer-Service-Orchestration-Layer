@@ -71,3 +71,52 @@ The Redis key `csol:conversation:<Hermes session ID>` contains the current state
 Redis reserves the action and its validated arguments before dispatch. PostgreSQL locks the customer row and records a stable operation ID with the outcome in the same transaction as the balance change. After a service interruption, read the current instruction. If Redis still has an in-flight action, retry the recorded tool, arguments, and revision. CSOL checks for the committed outcome before applying a balance change and then finishes the Redis transition. A changed command at that revision is rejected.
 
 For a manual check, query `csol.operations` by `operation_id`. The ID combines the Redis conversation's `instance`, a period, and its action revision. The receipt contains the signed balance change and the posted balance. Service owners should confirm this lookup and the schema contract before connecting a live wallet.
+
+## Author a workflow
+
+Create `workflow/<workflow_id>/workflow.yaml` and one directory per step. The workflow and step directory names are the IDs persisted in Redis. Use Python identifiers for IDs and aliases. Aliases are local to the manifest, so changing an alias does not change a stored step ID. Reference cross-workflow destinations by workflow ID and the target's step alias. Add a destination to an existing workflow only when it needs to route to the new workflow.
+
+For example, this manifest in `workflow/check_status/workflow.yaml` declares one step and a return route.
+
+```yaml
+version: 1
+context:
+  checked: {type: boolean, default: false}
+reset_on_return_to_menu: [checked]
+steps:
+  check: {directory: check_account}
+destinations:
+  menu: {workflow: landing, step: menu}
+```
+
+Put the question in `workflow/check_status/check_account/instruction.md` and export a `Step` from the directory's `main.py`. The exported handler names become MCP tool names, so choose globally unique names and keep them stable while stored conversations or reservations still refer to them.
+
+```python
+from app.model import Action, Step
+
+
+def status_instruction(workflow):
+    return workflow.instruction_text
+
+
+async def acknowledge_status(conversation, args, db, turn, workflow):
+    """Acknowledge the status and return to the service menu."""
+    workflow.context()["checked"] = True
+    workflow.move("menu")
+    return {"outcome": "status_acknowledged"}
+
+
+step = Step(status_instruction, acknowledge_status, Action)
+```
+
+The registry loads manifests at startup. It requires one `start_at` and one `return_to_menu_at` across the registry, each pointing to a local step alias. Use one YAML document per file with explicit values. Duplicate keys, tags, anchors, aliases, and merge keys are rejected. Every directory containing a step's `main.py` must be declared and have a nonempty instruction file. Keep action input schemas, conditions, and handlers in Python.
+
+Context supports strings, integers, booleans, and typed objects. Use `nullable: true` to accept null, `minimum` or `maximum` to constrain integers, and `default` to supply an initial value. Objects reject undeclared keys and require fields that have no default. Read values through `workflow.context()` and assign edited objects back through that accessor. To read or write another workflow's fields, list them under `context_dependencies` and use `workflow.context("other_workflow")`. To include context values in instruction responses, define `export_context(workflow)` in the workflow's `__init__.py` and return a mapping of the values to expose. Values are private by default. A confirmed global menu return reverts each manifest's listed reset fields to their defaults, or removes them if no default was declared.
+
+## Roll out the Redis format
+
+1. Deploy this release to all instances with `CSOL_CONVERSATION_WRITE_FORMAT=legacy` (the default). It reads both formats and writes the flat record. Verify the six existing steps and retained conversations before proceeding.
+2. Switch all writers together to `CSOL_CONVERSATION_WRITE_FORMAT=versioned`. Reads preserve the stored record. The next successful reservation or transition writes the versioned envelope at the same Redis key. Conversion itself does not advance the revision.
+3. Keep this compatibility release as the rollback target. To roll back, switch writers back to `legacy`. The compatibility release can still resume already converted conversations and writes them in the flat format on their next update. Retire that rollback target before deploying workflows with new persisted states or context fields. Startup rejects such extensions while legacy writes are active.
+
+The PostgreSQL schema is unchanged. Keep the existing state IDs, step IDs, and tool names stable while conversations or pending operations still reference them.

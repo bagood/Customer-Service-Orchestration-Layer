@@ -1,5 +1,4 @@
 import pytest
-from app.engine import allowed
 from app.store import BindingMismatch
 
 
@@ -11,7 +10,7 @@ async def test_independent_chats_bound_to_one_account(engine, call):
     assert (result["state"], result["step"]) == ("landing", "intent_classification")
     assert result["instruction"]["context"]["display_name"] == "Ari"
     other = await engine.conversations.read("other", "wallet")
-    assert other.revision == 0 and "record_name" in allowed(other)
+    assert other.revision == 0 and "record_name" in engine.registry.allowed(other)
     assert (await call("record_name", name="Ari"))["outcome"] == "out_of_step"
     with pytest.raises(BindingMismatch):
         await engine.conversations.read("chat", "different-wallet")

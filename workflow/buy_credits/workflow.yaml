@@ -1,0 +1,8 @@
+version: 1
+steps:
+  amount: {directory: amount_of_balance}
+context_dependencies:
+  buy_package: [offer, offer_presented_turn, shortfall]
+destinations:
+  confirm: {workflow: buy_package, step: confirm}
+  menu: {workflow: landing, step: menu}

@@ -1,5 +1,5 @@
 import pytest
-from app.model import DETOUR
+from conftest import DETOUR
 
 
 @pytest.mark.parametrize("answer,step,keep", [("yes", "amount_of_balance", True), ("no", "intent_classification", False)])

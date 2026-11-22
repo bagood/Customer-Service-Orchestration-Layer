@@ -5,26 +5,45 @@ import pytest
 from fakeredis.aioredis import FakeRedis
 
 from app.engine import Engine
-from app.model import Conversation, CONFIRM, DETOUR
+from app.registry import build_registry
 from app.store import Conversations
 
 OFFER = {"package_id": "p", "name": "Data", "benefits": "streaming", "quota_gb": 5, "price": 50}
+START = ("start", "identification")
+MENU = ("landing", "intent_classification")
+PREFERENCES = ("buy_package", "package_preference_identification")
+CONFIRM = ("buy_package", "user_confirmation")
+DETOUR = ("buy_package", "buy_credits_confirmation")
+CREDITS = ("buy_credits", "amount_of_balance")
+
+LEGACY_TOOLS = {
+    START: ("identification_instruction", "record_name"),
+    MENU: ("menu_instruction", "select_service"),
+    PREFERENCES: ("preference_instruction", "match_package"),
+    CONFIRM: ("purchase_instruction", "confirm_package"),
+    DETOUR: ("detour_instruction", "confirm_credit_detour"),
+    CREDITS: ("credit_instruction", "add_credits"),
+}
+
+
+@pytest.fixture(scope="session")
+def registry():
+    return build_registry()
 
 
 @pytest.fixture
-async def engine():
+async def engine(registry):
     async with FakeRedis(decode_responses=True) as redis:
-        yield Engine(Conversations(redis), AsyncMock())
+        yield Engine(Conversations(redis, registry, "versioned"), AsyncMock(), registry)
 
 
 @pytest.fixture
 def enter(engine):
     async def seed(pair, **context):
-        c = Conversation(customer="wallet", state=pair[0], step=pair[1], **context)
+        data = {"customer": "wallet", "instance": "fixture", "state": pair[0], "step": pair[1], "revision": 0}
         if pair in (CONFIRM, DETOUR):
-            c.offer = OFFER
-        await engine.conversations.redis.set("csol:conversation:chat", json.dumps(c.dump()))
-        return c
+            data["offer"] = OFFER
+        await engine.conversations.redis.set("csol:conversation:chat", json.dumps({**data, **context}))
     return seed
 
 

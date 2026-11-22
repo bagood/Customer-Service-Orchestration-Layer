@@ -1,0 +1,7 @@
+version: 1
+return_to_menu_at: menu
+steps:
+  menu: {directory: intent_classification}
+destinations:
+  preferences: {workflow: buy_package, step: preferences}
+  top_up: {workflow: buy_credits, step: amount}

@@ -1,0 +1,25 @@
+version: 1
+context:
+  offer:
+    type: object
+    nullable: true
+    default: null
+    fields:
+      package_id: {type: string}
+      name: {type: string}
+      benefits: {type: string}
+      quota_gb: {type: integer, minimum: 0}
+      price: {type: integer, minimum: 1}
+  offer_presented_turn: {type: string, nullable: true, default: null}
+  shortfall: {type: integer, nullable: true, default: null}
+reset_on_return_to_menu: [offer, offer_presented_turn, shortfall]
+steps:
+  preferences: {directory: package_preference_identification}
+  confirm: {directory: user_confirmation}
+  credit_detour: {directory: buy_credits_confirmation}
+destinations:
+  menu: {workflow: landing, step: menu}
+  preferences: {workflow: buy_package, step: preferences}
+  confirm: {workflow: buy_package, step: confirm}
+  credit_detour: {workflow: buy_package, step: credit_detour}
+  top_up: {workflow: buy_credits, step: amount}
