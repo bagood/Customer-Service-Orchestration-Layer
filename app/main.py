@@ -10,6 +10,7 @@ from mcp import types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from redis.asyncio import Redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 from starlette.applications import Starlette
 from starlette.routing import Route
 
@@ -101,10 +102,14 @@ def create_app(open_services=services):
             token = authorization.removeprefix("Bearer ")
             session, customer, _ = identity(token, application.state.key)
             engine = application.state.engine
-            c = await engine.conversations.read(session, customer)
+            try:
+                c = await engine.conversations.read(session, customer)
+            except RedisConnectionError:
+                # A pooled connection can close when Redis is recreated. Reads and SET NX can be retried.
+                c = await engine.conversations.read(session, customer)
         except (jwt.PyJWTError, BindingMismatch):
             raise HTTPException(403, "Invalid conversation binding") from None
-        except InvalidConversation:
+        except (InvalidConversation, RedisConnectionError):
             raise HTTPException(503, "Conversation state is unavailable") from None
         return {"allowed_tools": engine.registry.allowed(c), "state": c.state, "step": c.step, "revision": c.revision}
 

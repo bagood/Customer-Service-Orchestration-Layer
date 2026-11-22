@@ -5,11 +5,12 @@ import httpx
 import jwt
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from app.main import create_app
 
 
-async def test_scoped_calls_on_a_stable_http_catalog(engine):
+async def test_scoped_calls_on_a_stable_http_catalog(engine, monkeypatch):
     key = "fixture-signing-key-" * 2
 
     def binding(session="one", account="test", secret=key):
@@ -37,6 +38,18 @@ async def test_scoped_calls_on_a_stable_http_catalog(engine):
             engine.accounts.post.return_value = {"outcome": "name_recorded"}
             result = await mcp.call_tool("record_name", {**args, "name": "Ari", "revision": 0})
             assert not result.isError and result.structuredContent["step"] == "intent_classification"
+
+            read = engine.conversations.read
+            with monkeypatch.context() as patch:
+                async def read_after_disconnect(session, customer):
+                    patch.setattr(engine.conversations, "read", read)
+                    raise RedisConnectionError("Connection closed by server")
+
+                patch.setattr(engine.conversations, "read", read_after_disconnect)
+                response = await http.get("/scope", headers={"Authorization": f"Bearer {args['binding']}"})
+                assert response.status_code == 200
+                assert (response.json()["step"], response.json()["revision"]) == ("intent_classification", 1)
+
             assert (await mcp.list_tools()).tools == initial.tools
             old = await mcp.call_tool("record_name", {**args, "name": "Old", "revision": 0})
             assert old.isError and old.structuredContent["instruction"]["action"] == "select_service"

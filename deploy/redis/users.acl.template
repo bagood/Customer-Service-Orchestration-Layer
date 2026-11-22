@@ -1,0 +1,2 @@
+user default off
+user csol on #PASSWORD_SHA256 ~csol:conversation:* +get +set +watch +unwatch +multi +exec +discard +ping +hello +client|setinfo

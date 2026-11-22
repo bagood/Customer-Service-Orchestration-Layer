@@ -4,3 +4,71 @@ services:
     env_file: ./.env
     ports:
       - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:8.10.3-alpine
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    secrets:
+      - redis_acl
+      - redis_password
+    volumes:
+      - redis_data:/data
+      - ./deploy/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" &&
+          export REDISCLI_AUTH &&
+          [ "$$(redis-cli -h 127.0.0.1 --user csol --raw PING)" = PONG ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  postgres:
+    image: postgres:17.12-bookworm
+    environment:
+      POSTGRES_DB: csol
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin_password
+    secrets:
+      - postgres_admin_password
+      - postgres_app_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./deploy/postgres/migrations:/usr/local/share/csol/migrations:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          PGPASSWORD="$$(cat /run/secrets/postgres_app_password)" &&
+          export PGPASSWORD &&
+          psql -X -w -h 127.0.0.1 -U csol_app -d csol -v ON_ERROR_STOP=1 -qAt
+          -c 'SELECT 1 FROM csol.customers LIMIT 1'
+          -c 'SELECT 1 FROM csol.packages LIMIT 1'
+          -c 'SELECT 1 FROM csol.operations LIMIT 1'
+          >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+secrets:
+  redis_acl:
+    file: ./.secrets/redis.acl
+  redis_password:
+    file: ./.secrets/redis_password
+  postgres_admin_password:
+    file: ./.secrets/postgres_admin_password
+  postgres_app_password:
+    file: ./.secrets/postgres_app_password
+
+volumes:
+  postgres_data:
+  redis_data:
