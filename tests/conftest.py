@@ -16,7 +16,7 @@ CONFIRM = ("buy_package", "user_confirmation")
 DETOUR = ("buy_package", "buy_credits_confirmation")
 CREDITS = ("buy_credits", "amount_of_balance")
 
-LEGACY_TOOLS = {
+STEP_TOOLS = {
     START: ("identification_instruction", "record_name"),
     MENU: ("menu_instruction", "select_service"),
     PREFERENCES: ("preference_instruction", "match_package"),
@@ -34,16 +34,19 @@ def registry():
 @pytest.fixture
 async def engine(registry):
     async with FakeRedis(decode_responses=True) as redis:
-        yield Engine(Conversations(redis, registry, "versioned"), AsyncMock(), registry)
+        yield Engine(Conversations(redis, registry), AsyncMock(), registry)
 
 
 @pytest.fixture
 def enter(engine):
-    async def seed(pair, **context):
-        data = {"customer": "wallet", "instance": "fixture", "state": pair[0], "step": pair[1], "revision": 0}
+    async def seed(pair, *, display_name=None, **package_context):
         if pair in (CONFIRM, DETOUR):
-            data["offer"] = OFFER
-        await engine.conversations.redis.set("csol:conversation:chat", json.dumps({**data, **context}))
+            package_context.setdefault("offer", OFFER)
+        data = {
+            "version": 1, "customer": "wallet", "instance": "fixture", "state": pair[0], "step": pair[1],
+            "revision": 0, "context": {"start": {"display_name": display_name}, "buy_package": package_context},
+        }
+        await engine.conversations.redis.set("csol:conversation:chat", json.dumps(data))
     return seed
 
 

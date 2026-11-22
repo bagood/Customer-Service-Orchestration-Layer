@@ -33,7 +33,7 @@ async def services():
     if len(key.encode()) < 32:
         raise ValueError("CSOL_BINDING_KEY requires at least 32 bytes")
     async with Redis.from_url(os.environ["REDIS_URL"], decode_responses=True) as redis:
-        conversations = Conversations(redis, registry, os.getenv("CSOL_CONVERSATION_WRITE_FORMAT", "legacy"))
+        conversations = Conversations(redis, registry)
         await redis.ping()
         async with asyncpg.create_pool(os.environ["DATABASE_URL"], min_size=1, max_size=8) as pool:
             yield Engine(conversations, Accounts(pool), registry), key

@@ -28,9 +28,3 @@ class Accounts:
                 operation, account, kind, json.dumps(result),
             )
             return result
-
-
-async def change_balance(conn, account, delta):
-    return await conn.fetchval(
-        "UPDATE csol.customers SET balance=balance+$2 WHERE customer_id=$1 RETURNING balance", account, delta,
-    )

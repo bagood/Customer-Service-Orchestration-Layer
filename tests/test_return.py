@@ -1,16 +1,16 @@
 import pytest
 from app.registry import WorkflowAccess
-from conftest import CONFIRM, LEGACY_TOOLS, MENU
+from conftest import CONFIRM, STEP_TOOLS, MENU
 
 
-@pytest.mark.parametrize("pair", LEGACY_TOOLS)
+@pytest.mark.parametrize("pair", STEP_TOOLS)
 @pytest.mark.parametrize("answer", ["yes", "no"])
 async def test_return_at_every_step(engine, enter, call, pair, answer):
     await enter(pair, display_name="Ari")
     before = await engine.conversations.read("chat", "wallet")
     assert (await call("resolve_return_to_landing", answer="yes"))["outcome"] == "no_pending_return"
     pending = await call("request_return_to_landing")
-    assert pending["allowed_tools"] == [*LEGACY_TOOLS[pair], "request_return_to_landing", "resolve_return_to_landing"]
+    assert pending["allowed_tools"] == [*STEP_TOOLS[pair], "request_return_to_landing", "resolve_return_to_landing"]
     assert "leave" in pending["instruction"]["question"]
     assert (await call("resolve_return_to_landing", 0, answer="yes"))["outcome"] == "stale_revision"
     result = await call("resolve_return_to_landing", 1, answer=answer)

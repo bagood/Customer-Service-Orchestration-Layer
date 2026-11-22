@@ -25,7 +25,7 @@ async def live(registry):
         await pool.execute("INSERT INTO csol.customers(customer_id,balance) VALUES ($1,20)", customer)
         try:
             await pool.execute("INSERT INTO csol.packages VALUES ($1,'Demo',$1,5,50)", customer)
-            yield Engine(Conversations(redis, registry, "versioned"), Accounts(pool), registry), customer, pool
+            yield Engine(Conversations(redis, registry), Accounts(pool), registry), customer, pool
         finally:
             async with pool.acquire() as conn, conn.transaction():
                 await conn.execute("DELETE FROM csol.operations WHERE customer_id=$1", customer)
@@ -37,7 +37,6 @@ async def live(registry):
 async def test_purchase_detour_and_commit_recovery(live, monkeypatch):
     engine, customer, pool = live
     redis, registry = engine.conversations.redis, engine.registry
-    engine = Engine(Conversations(redis, registry), engine.accounts, registry)
 
     async def act(tool, rev, **args):
         return await engine.invoke(customer, customer, tool, {"revision": rev, **args}, turn=str(rev))
@@ -63,9 +62,9 @@ async def test_purchase_detour_and_commit_recovery(live, monkeypatch):
             await act("add_credits", 7, amount=30)
     key = f"csol:conversation:{customer}"
     reserved = json.loads(await redis.get(key))
-    assert "version" not in reserved and reserved["in_flight"]["tool"] == "add_credits"
+    assert reserved["version"] == 1 and reserved["in_flight"]["tool"] == "add_credits"
 
-    engine = Engine(Conversations(redis, registry, "versioned"), engine.accounts, registry)
+    engine = Engine(Conversations(redis, registry), engine.accounts, registry)
     assert await pool.fetchval("SELECT balance FROM csol.customers WHERE customer_id=$1", customer) == 50
     assert (await act("add_credits", 7, amount=40))["outcome"] == "operation_pending"
     result = await act("add_credits", 7, amount=30)

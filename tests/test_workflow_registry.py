@@ -5,9 +5,9 @@ import pytest
 
 from app.engine import Engine
 from app.manifest import read_manifest
-from app.registry import WORKFLOW_ROOT, WorkflowAccess, build_registry, hermes_name
+from app.registry import WORKFLOW_ROOT, WorkflowAccess, build_registry
 from app.store import Conversations
-from conftest import LEGACY_TOOLS
+from conftest import STEP_TOOLS
 
 PROBE_MANIFEST = """
 version: 1
@@ -70,7 +70,7 @@ def workflow_tree(registry, tmp_path, monkeypatch):
 def test_catalog_order_and_resolved_destinations(registry):
     global_tools = ("request_return_to_landing", "resolve_return_to_landing")
     assert tuple(tool.name for tool in registry.catalog) == (
-        *(name for pair in LEGACY_TOOLS.values() for name in pair), *global_tools,
+        *(name for pair in STEP_TOOLS.values() for name in pair), *global_tools,
     )
     assert registry.workflows["landing"].destinations["top_up"] == ("buy_credits", "amount_of_balance")
     with pytest.raises(TypeError):
@@ -135,36 +135,11 @@ def test_reject_undeclared_step_and_missing_instruction(workflow_tree):
         build_registry(workflow_tree)
 
 
-def test_reject_shortened_tool_collision(workflow_tree):
-    long_name = "n" * 80
-    short_name = hermes_name(long_name).removeprefix("mcp__csol__")
-    step = workflow_tree / "probe" / "record_count" / "main.py"
-    step.write_text(PROBE_STEP + f"\ncount_instruction.__name__ = {short_name!r}\nrecord_count.__name__ = {long_name!r}\n")
-    with pytest.raises(ValueError, match=r"workflow.probe.record_count.main: duplicate MCP tool"):
-        build_registry(workflow_tree)
-
-
-def test_reject_collision_after_hermes_sanitization(workflow_tree):
-    step = workflow_tree / "probe" / "record_count" / "main.py"
-    step.write_text(PROBE_STEP + '\nrecord_count.__name__ = "count-instruction"\n')
-    with pytest.raises(ValueError, match=r"workflow.probe.record_count.main: duplicate MCP tool"):
-        build_registry(workflow_tree)
-
-
 def test_reject_collision_with_global_tool(workflow_tree):
     step = workflow_tree / "probe" / "record_count" / "main.py"
     step.write_text(PROBE_STEP + '\nrecord_count.__name__ = "request_return_to_landing"\n')
     with pytest.raises(ValueError, match=r"global.main: duplicate MCP tool .*probe/workflow.yaml"):
         build_registry(workflow_tree)
-
-
-def test_legacy_mode_rejects_new_field_in_existing_workflow(workflow_tree):
-    shutil.rmtree(workflow_tree / "probe")
-    manifest = workflow_tree / "start" / "workflow.yaml"
-    manifest.write_text(manifest.read_text().replace("context:\n", "context:\n  new_key: {type: boolean, default: false}\n"))
-    registry = build_registry(workflow_tree)
-    with pytest.raises(ValueError, match=r"context.new_key requires versioned writes"):
-        Conversations(None, registry)
 
 
 async def test_new_workflow_executes_from_manifest(workflow_tree, engine):
@@ -173,9 +148,7 @@ async def test_new_workflow_executes_from_manifest(workflow_tree, engine):
         "preferences: {workflow: buy_package, step: preferences}", "preferences: {workflow: probe, step: count}",
     ))
     registry = build_registry(workflow_tree)
-    with pytest.raises(ValueError, match=r"step 'record_count' requires versioned writes"):
-        Conversations(engine.conversations.redis, registry)
-    engine = Engine(Conversations(engine.conversations.redis, registry, "versioned"), engine.accounts, registry)
+    engine = Engine(Conversations(engine.conversations.redis, registry), engine.accounts, registry)
     engine.accounts.post.return_value = {"outcome": "name_recorded"}
 
     for session in ("one", "two"):

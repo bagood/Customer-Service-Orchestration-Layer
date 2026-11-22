@@ -1,4 +1,4 @@
-from app.database import change_balance
+from workflow.buy_credits.helper import change_balance
 
 CATALOG_FIELDS = "package_id, name, benefits, quota_gb, price"
 
